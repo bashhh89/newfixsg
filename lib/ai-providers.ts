@@ -559,39 +559,52 @@ export class AIProviderManager {
   
   async generateNextQuestion(systemPrompt: string, userPrompt: string): Promise<any> {
     this.lastQuestionProviderName = undefined;
-    if (this.googleProvider && await this.googleProvider.isAvailable()) {
-      console.log('AI Manager: Requesting next question (delegating to Google Gemini).');
+
+    // Prioritize Pollinations for questions (as requested for testing)
+    if (this.pollinationsProvider && await this.pollinationsProvider.isAvailable()) {
+      console.log('AI Manager: Requesting next question (delegating to Pollinations).');
       try {
-        const question = await this.googleProvider.generateNextQuestion(systemPrompt, userPrompt);
-        this.lastQuestionProviderName = this.googleProvider.name;
+        const question = await this.pollinationsProvider.generateNextQuestion(systemPrompt, userPrompt);
+        this.lastQuestionProviderName = this.pollinationsProvider.name;
         return question;
       } catch (error) {
-        console.error('AI Manager: Google Gemini failed to generate next question:', error);
+        console.warn('AI Manager: Pollinations failed to generate next question, trying fallback (OpenAI):', error);
       }
     }
-    
+
+    // Fallback to OpenAI for questions
     if (this.openAIProvider && await this.openAIProvider.isAvailable()) {
-        console.warn('AI Manager: Google Gemini failed or unavailable. Trying OpenAI for next question.');
+      console.log('AI Manager: Pollinations failed or unavailable. Trying OpenAI for next question.');
+      try {
+        const question = await this.openAIProvider.generateNextQuestion(systemPrompt, userPrompt);
+        this.lastQuestionProviderName = this.openAIProvider.name;
+        return question;
+      } catch (error) {
+        console.warn('AI Manager: OpenAI failed to generate next question, trying fallback (Google Gemini):', error);
+      }
+    }
+
+    // Fallback to Google Gemini for questions
+    if (this.googleProvider && await this.googleProvider.isAvailable()) {
+        console.log('AI Manager: OpenAI failed or unavailable. Trying Google Gemini for next question.');
         try {
-            const question = await this.openAIProvider.generateNextQuestion(systemPrompt, userPrompt);
-            this.lastQuestionProviderName = this.openAIProvider.name;
+            const question = await this.googleProvider.generateNextQuestion(systemPrompt, userPrompt);
+            this.lastQuestionProviderName = this.googleProvider.name;
             return question;
         } catch (error) {
-            console.error('AI Manager: OpenAI also failed to generate next question:', error);
+            console.error('AI Manager: Google Gemini also failed to generate next question:', error);
         }
     }
 
-    // Add Groq as a final fallback for questions if specifically needed, or remove if not desired.
-    // For now, keeping it simple with Google -> OpenAI.
-    console.error('AI Manager: All primary/fallback providers (Google, OpenAI) failed for questions.');
+    console.error('AI Manager: All configured AI providers (Pollinations, OpenAI, Google Gemini) failed for question generation.');
     throw new Error('All configured AI providers for question generation failed.');
   }
-  
+
   async generateReport(systemPrompt: string, userPrompt: string): Promise<string> {
     console.log('AIProviderManager: Attempting to generate report.');
     this.lastReportProviderName = undefined;
 
-    // Prioritize OpenAI
+    // Prioritize OpenAI for reports
     if (this.openAIProvider && await this.openAIProvider.isAvailable()) {
       try {
         console.log('AIProviderManager: Using OpenAI for report generation (priority).');
@@ -599,49 +612,25 @@ export class AIProviderManager {
         this.lastReportProviderName = this.openAIProvider.name;
         return report;
       } catch (error) {
-        console.warn('AIProviderManager: OpenAI report generation failed (priority attempt), trying next available:', error);
-        // Fall through to other providers if OpenAI fails
+        console.warn('AIProviderManager: OpenAI report generation failed (priority attempt), trying fallback (Google Gemini):', error);
+        // Fall through to Google Gemini if OpenAI fails
       }
     }
 
-    // Fallback to existing logic (Groq then Google, then Pollinations as last resort or error)
-    if (this.groqProvider && await this.groqProvider.isAvailable()) {
-      try {
-        console.log('AIProviderManager: Using Groq for report generation.');
-        const report = await this.groqProvider.generateReport(systemPrompt, userPrompt);
-        this.lastReportProviderName = this.groqProvider.name;
-        return report;
-      } catch (error) {
-        console.warn('AIProviderManager: Groq report generation failed, trying next available:', error);
-      }
-    }
-    
+    // Fallback to Google Gemini for reports
     if (this.googleProvider && await this.googleProvider.isAvailable()) {
       try {
-        console.log('AIProviderManager: Using Google for report generation.');
+        console.log('AIProviderManager: Using Google Gemini for report generation.');
         const report = await this.googleProvider.generateReport(systemPrompt, userPrompt);
         this.lastReportProviderName = this.googleProvider.name;
         return report;
       } catch (error) {
-        console.warn('AIProviderManager: Google report generation failed, trying Pollinations as last resort:', error);
+        console.error('AIProviderManager: Google Gemini report generation failed:', error);
       }
     }
 
-    // Last resort: Pollinations (if it was ever intended for full reports)
-    // Or, if you prefer to error out if primary/secondary fail, adjust this section.
-    if (this.pollinationsProvider && await this.pollinationsProvider.isAvailable()) {
-        try {
-            console.log('AIProviderManager: Using Pollinations for report generation (fallback).');
-            const report = await this.pollinationsProvider.generateReport(systemPrompt, userPrompt);
-            this.lastReportProviderName = this.pollinationsProvider.name;
-            return report;
-        } catch (error) {
-            console.error('AIProviderManager: Pollinations report generation failed (fallback attempt):', error);
-        }
-    }
-
-    console.error('AIProviderManager: No AI provider available or all failed for report generation.');
-    throw new Error('All AI providers for report generation failed or are unavailable.');
+    console.error('AIProviderManager: No primary or fallback AI provider (OpenAI, Google Gemini) available or both failed for report generation.');
+    throw new Error('All configured AI providers for report generation failed or are unavailable.');
   }
 
   getReportProviderName(): string | undefined {
@@ -655,4 +644,4 @@ export class AIProviderManager {
 
 // Create and export a singleton instance
 const aiManager = new AIProviderManager();
-export default aiManager; 
+export default aiManager;

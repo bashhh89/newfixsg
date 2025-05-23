@@ -1,6 +1,7 @@
 'use client';
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import NewResultsPage from './NewResultsPage';
+import LeadCaptureForm from '@/components/scorecard/LeadCaptureForm';
 
 // Loading fallback component
 const ResultsLoading = () => (
@@ -35,6 +36,10 @@ const ResultsLoading = () => (
 );
 
 export default function ResultsPage() {
+  const [showLeadForm, setShowLeadForm] = useState(false);
+  const [reportData, setReportData] = useState<any>(null);
+  const [leadCaptured, setLeadCaptured] = useState(false);
+
   useEffect(() => {
     // Debug any issues with accessing the results
     console.log('RESULTS PAGE WRAPPER: Component mounted');
@@ -68,8 +73,53 @@ export default function ResultsPage() {
                   localStorage.getItem('aiTier');
                   
       console.log('RESULTS PAGE WRAPPER: Stored tier value:', tier);
+
+      // Check if lead information exists
+      const leadEmail = sessionStorage.getItem('scorecardLeadEmail') || localStorage.getItem('scorecardLeadEmail');
+      const leadName = sessionStorage.getItem('scorecardLeadName') || localStorage.getItem('scorecardLeadName');
+      
+      // If we have report data but no lead info, show the lead form
+      if (sessionMarkdown && (!leadEmail || !leadName)) {
+        console.log('RESULTS PAGE WRAPPER: Report exists but no lead info found, showing lead form');
+        setShowLeadForm(true);
+        
+        // Collect report data for the lead form
+        setReportData({
+          reportMarkdown: sessionMarkdown,
+          questionAnswerHistory: JSON.parse(sessionStorage.getItem('questionAnswerHistory') || localStorage.getItem('questionAnswerHistory') || '[]'),
+          tier: tier,
+          industry: sessionStorage.getItem('industry') || localStorage.getItem('industry') || ''
+        });
+      } else {
+        setLeadCaptured(true);
+      }
     }
   }, []);
+  
+  const handleLeadCaptureSuccess = (capturedName: string) => {
+    console.log("Lead capture successful. Captured name:", capturedName);
+    setLeadCaptured(true);
+    setShowLeadForm(false);
+    
+    // Store the name in sessionStorage for use in results page
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('scorecardUserName', capturedName);
+    }
+  };
+  
+  if (showLeadForm && reportData) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <LeadCaptureForm
+          aiTier={reportData.tier}
+          onSubmitSuccess={handleLeadCaptureSuccess}
+          reportMarkdown={reportData.reportMarkdown}
+          questionAnswerHistory={reportData.questionAnswerHistory}
+          industry={reportData.industry || ''}
+        />
+      </div>
+    );
+  }
   
   return (
     <Suspense fallback={<ResultsLoading />}>

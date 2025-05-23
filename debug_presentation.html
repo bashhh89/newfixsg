@@ -3,33 +3,223 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Scorecard Report: Company Not Provided</title>
+  <title>AI Efficiency Scorecard: Company Not Provided</title>
+  <style>
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: url('PlusJakartaSans-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 700;
+  src: url('PlusJakartaSans-Bold.ttf') format('truetype');
+}
+</style>
   <style>
     /* CSS Reset and Base Styles */
-    * {
+    *, *::before, *::after {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
     
+    /* CSS Variables */
+    :root {
+      /* Color Palette */
+      --accent-green: #20E28F;
+      --primary-dark: #103138;
+      --white: #FFFFFF;
+      --light-mint: #F3FDF5;
+      
+      /* Tier Colors */
+      --dabbler-color: #FEC401;
+      --dabbler-light: #FFFBE5;
+      --enabler-color: #FE7F01;
+      --enabler-light: #FFF1E5;
+      --leader-color: #01CEFE;
+      --leader-light: #E5F9FF;
+      
+      /* Typography Scale (in pt for WeasyPrint) */
+      --text-xs: 8pt;
+      --text-sm: 9pt;
+      --text-base: 11pt;
+      --text-lg: 13pt;
+      --text-xl: 16pt;
+      --text-2xl: 18pt;
+      --text-3xl: 22pt;
+      --text-4xl: 32pt;
+      
+      /* Spacing Scale (in mm for WeasyPrint) */
+      --space-1: 2mm;
+      --space-2: 4mm;
+      --space-3: 6mm;
+      --space-4: 8mm;
+      --space-5: 12mm;
+      --space-6: 16mm;
+      --space-8: 24mm;
+    }
+    
     /* Core Typography */
     body {
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: 'Plus Jakarta Sans', Arial, sans-serif;
       line-height: 1.5;
-      color: #333;
-      background-color: #fff;
-      font-size: 12pt;
+      color: var(--primary-dark);
+      background-color: var(--white);
+      font-size: var(--text-base);
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     
-    /* Page Layout - Optimized for Landscape */
+    /* Page Layout */
     .page {
-      width: 100%;
-      height: 100%;
-      padding: 20mm;
+      width: 210mm;
+      min-height: 297mm;
+      padding: var(--space-5);
       page-break-after: always;
       position: relative;
+      margin: 0 auto;
     }
     
+    /* Title Page Design */
+    .title-page {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      min-height: 297mm;
+      background-color: var(--white);
+      padding: var(--space-8);
+    }
+    
+    .title-page h1 {
+      font-size: var(--text-4xl);
+      color: var(--primary-dark);
+      margin-bottom: var(--space-6);
+      border: none;
+      padding: 0;
+      max-width: 80%;
+      line-height: 1.2;
+    }
+    
+    .title-page h2 {
+      font-size: var(--text-2xl);
+      color: var(--accent-green);
+      margin-bottom: var(--space-8);
+    }
+    
+    .title-details {
+      margin-top: var(--space-8);
+      font-size: var(--text-lg);
+    }
+    
+    .title-details p {
+      margin: var(--space-2) 0;
+      line-height: 1.6;
+    }
+    
+    /* Report Overview Page */
+    .overview-page {
+      padding: var(--space-6);
+    }
+    
+    .info-block {
+      background-color: var(--light-mint);
+      border-left: 4pt solid var(--accent-green);
+      padding: var(--space-4);
+      margin-bottom: var(--space-4);
+      border-radius: 4pt;
+    }
+    
+    .info-block h3 {
+      color: var(--primary-dark);
+      margin-bottom: var(--space-3);
+      font-size: var(--text-lg);
+    }
+    
+    .info-row {
+      display: flex;
+      margin-bottom: var(--space-2);
+      align-items: baseline;
+    }
+    
+    .info-label {
+      font-weight: 600;
+      width: 150pt;
+      flex-shrink: 0;
+    }
+    
+    .info-value {
+      flex: 1;
+    }
+    
+    /* Section Headers */
+    h1 {
+      font-size: var(--text-3xl);
+      color: var(--primary-dark);
+      margin-bottom: var(--space-4);
+      border-bottom: 2pt solid var(--accent-green);
+      padding-bottom: var(--space-2);
+    }
+    
+    h2 {
+      font-size: var(--text-2xl);
+      color: var(--accent-green);
+      margin-top: var(--space-4);
+      margin-bottom: var(--space-3);
+    }
+    
+    h3 {
+      font-size: var(--text-xl);
+      color: var(--primary-dark);
+      margin-top: var(--space-3);
+      margin-bottom: var(--space-2);
+    }
+    
+    /* Global Footer */
+    @page {
+      @bottom-center {
+        content: "AI Efficiency Scorecard | Page " counter(page) " of " counter(pages);
+        font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+        font-size: var(--text-xs);
+        color: var(--primary-dark);
+      }
+      margin: var(--space-4);
+    }
+    
+    /* Print-Specific Styles */
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      
+      .page {
+        height: 100vh;
+        box-sizing: border-box;
+      }
+      
+      /* Critical for avoiding unwanted page breaks */
+      .no-break {
+        page-break-inside: avoid !important;
+      }
+      
+      /* Ensure headers don't break across pages */
+      h1, h2, h3 {
+        page-break-after: avoid;
+        page-break-before: auto;
+      }
+      
+      /* Ensure long paragraphs don't get cut off */
+      p {
+        orphans: 3;
+        widows: 3;
+      }
+    }
+
     /* Cover Page Design */
     .cover {
       display: flex;
@@ -61,66 +251,6 @@
     
     .cover-details p {
       margin: 8pt 0;
-    }
-    
-    /* Section Headers */
-    h1 {
-      font-size: 28pt;
-      color: #2c3e50;
-      margin-bottom: 15pt;
-      border-bottom: 2pt solid #20E28F;
-      padding-bottom: 5pt;
-    }
-    
-    h2 {
-      font-size: 20pt;
-      color: #20E28F;
-      margin-top: 15pt;
-      margin-bottom: 10pt;
-    }
-    
-    h3 {
-      font-size: 16pt;
-      color: #2c3e50;
-      margin-top: 12pt;
-      margin-bottom: 8pt;
-    }
-    
-    h4 {
-      font-size: 14pt;
-      color: #20E28F;
-      margin-top: 10pt;
-      margin-bottom: 6pt;
-    }
-
-    h5 {
-      font-size: 13pt;
-      color: #2c3e50;
-      font-weight: bold;
-      margin-top: 8pt;
-      margin-bottom: 4pt;
-    }
-    
-    /* Content Styling */
-    p, li {
-      margin-bottom: 10pt;
-      line-height: 1.6;
-    }
-    
-    /* List Styling */
-    ul, ol {
-      margin-left: 15pt;
-      margin-bottom: 15pt;
-    }
-    
-    /* Content Boxes */
-    .content-box {
-      border: 1px solid #ddd;
-      padding: 15pt;
-      margin: 10pt 0;
-      border-radius: 5pt;
-      background-color: #f9f9f9;
-      box-shadow: 0 1pt 3pt rgba(0,0,0,0.05);
     }
     
     /* Two Column Layout */
@@ -276,91 +406,6 @@
       margin-top: 10pt;
     }
     
-    /* Print-Specific Styles */
-    @page {
-      size: A4 landscape;
-      margin: 0;
-    }
-    
-    @media print {
-      body {
-        margin: 0;
-        padding: 0;
-        font-size: 12pt !important;
-      }
-      
-      .page {
-        width: 100%;
-        height: 100%;
-        page-break-after: always;
-        overflow: hidden;
-        position: relative;
-        padding: 20mm;
-        box-sizing: border-box;
-      }
-      
-      a {
-        text-decoration: none;
-        color: #3498db;
-      }
-      
-      /* Critical for avoiding unwanted page breaks */
-      .no-break {
-        page-break-inside: avoid !important;
-      }
-      
-      /* Ensure headers don't break across pages */
-      h1, h2, h3 {
-        page-break-after: avoid;
-        page-break-before: auto;
-      }
-      
-      /* Ensure tables don't break across pages */
-      table {
-        page-break-inside: avoid;
-      }
-      
-      tr, td, th {
-        page-break-inside: avoid;
-      }
-      
-      /* Set table header to repeat on each page if table spans multiple pages */
-      thead {
-        display: table-header-group;
-      }
-      
-      /* Handle column layout better for printing */
-      .two-column {
-        display: block;
-        page-break-inside: avoid;
-      }
-      
-      .two-column > div {
-        display: inline-block;
-        width: 45%;
-        vertical-align: top;
-        margin-right: 4%;
-      }
-      
-      /* Improve content box appearance */
-      .content-box {
-        page-break-inside: avoid;
-        margin-bottom: 15pt;
-      }
-      
-      /* Fix for action items to ensure they don't break */
-      .action-item {
-        page-break-inside: avoid;
-        margin-bottom: 15pt;
-      }
-      
-      /* Ensure long paragraphs don't get cut off */
-      p {
-        orphans: 3;
-        widows: 3;
-      }
-    }
-
     /* Detailed Analysis Specific Styles */
     .detailed-analysis-content .dimension-block {
       margin-bottom: 20pt;
@@ -446,6 +491,163 @@
       color: #555;
       margin-bottom: 20pt;
     }
+
+    /* Content Sections */
+    .content-section {
+      margin-bottom: var(--space-4);
+    }
+    
+    .content-box {
+      background-color: var(--light-mint);
+      border-left: 4pt solid var(--accent-green);
+      padding: var(--space-4);
+      margin-bottom: var(--space-4);
+      border-radius: 4pt;
+    }
+    
+    /* Ensure proper content distribution */
+    .action-plan-container,
+    .detailed-analysis-content,
+    .learning-path-container {
+      min-height: 200mm;
+    }
+    
+    /* Table Styling */
+    .qa-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: var(--space-4) 0;
+    }
+    
+    .qa-table th,
+    .qa-table td {
+      border: 1pt solid #ddd;
+      padding: var(--space-2);
+      text-align: left;
+      font-size: var(--text-sm);
+    }
+    
+    .qa-table th {
+      background-color: var(--accent-green);
+      color: var(--white);
+      font-weight: bold;
+    }
+    
+    .qa-table tr:nth-child(even) {
+      background-color: #f5f5f5;
+    }
+    
+    /* Ensure table rows don't break across pages */
+    .qa-table tr {
+      page-break-inside: avoid;
+    }
+    
+    /* Strengths and Challenges Styling */
+    .strengths-container,
+    .weaknesses-container {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+
+    .strengths-content,
+    .weaknesses-content {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .strength-item,
+    .weakness-item {
+      padding: var(--space-3);
+      border-radius: 4pt;
+      background-color: var(--white);
+      box-shadow: 0 1pt 3pt rgba(0, 0, 0, 0.1);
+      page-break-inside: avoid;
+      margin-bottom: var(--space-3);
+    }
+
+    .strength-item {
+      border-left: 4pt solid var(--accent-green);
+    }
+
+    .weakness-item {
+      border-left: 4pt solid #ff6b6b;
+    }
+
+    .strength-item h5,
+    .weakness-item h5 {
+      color: var(--primary-dark);
+      font-size: var(--text-lg);
+      margin-bottom: var(--space-2);
+      font-weight: 600;
+    }
+
+    .strength-item p,
+    .weakness-item p {
+      color: var(--primary-dark);
+      font-size: var(--text-base);
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    /* Action Plan Styling */
+    .action-plan-container {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .action-item {
+      display: flex;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      background-color: var(--white);
+      border-radius: 4pt;
+      border-left: 4pt solid var(--accent-green);
+      box-shadow: 0 1pt 3pt rgba(0, 0, 0, 0.1);
+      page-break-inside: avoid;
+      margin-bottom: var(--space-4);
+    }
+
+    .action-number {
+      font-size: var(--text-2xl);
+      font-weight: bold;
+      color: var(--accent-green);
+      min-width: 40pt;
+      text-align: center;
+    }
+
+    .action-content {
+      flex: 1;
+    }
+
+    .action-content h3 {
+      color: var(--primary-dark);
+      font-size: var(--text-xl);
+      margin-bottom: var(--space-3);
+    }
+
+    .action-content ul {
+      margin: 0;
+      padding-left: var(--space-4);
+    }
+
+    .action-content li {
+      margin-bottom: var(--space-2);
+      color: var(--primary-dark);
+    }
+
+    /* Page Intro */
+    .page-intro {
+      font-style: italic;
+      color: var(--primary-dark);
+      margin-bottom: var(--space-4);
+      font-size: var(--text-base);
+      line-height: 1.5;
+    }
   </style>
   
   <script type="text/javascript">
@@ -468,137 +670,268 @@
 </head>
 
 <body>
-  <!-- COVER PAGE -->
-  <div class="page cover">
+  <!-- Title Page -->
+  <div class="page title-page">
     <div class="logo-container">
-      <!-- Social Garden logo as transparent SVG -->
-      <svg xmlns="http://www.w3.org/2000/svg" width="269" height="33" viewBox="0 0 269 33" fill="none">
-        <path d="M247.93 31.7382V9.61388H254.031V12.6867C255.261 10.5357 257.719 9.2627 260.792 9.2627C265.752 9.2627 269.001 12.8623 269.001 17.9544V31.7382H262.855V19.3152C262.855 16.6375 261.143 14.706 258.597 14.706C255.919 14.706 254.031 16.7692 254.031 19.6225V31.7382H247.93Z" fill="#2c3e50"></path>
-        <path d="M234.073 32.0894C226.522 32.0894 222.703 26.2072 222.703 20.6322C222.703 15.0572 226.127 9.2627 233.634 9.2627C241.447 9.2627 244.52 15.0572 244.52 20.0615C244.52 20.8955 244.476 21.554 244.432 22.0369H228.541C229.024 25.1536 230.956 27.0851 234.073 27.0851C236.531 27.0851 238.155 26.1194 238.638 24.2318H244.608C243.73 29.0166 239.516 32.0894 234.073 32.0894ZM228.673 18.13H238.462C238.243 15.6717 236.575 13.7402 233.634 13.7402C231 13.7402 229.288 15.2767 228.673 18.13Z" fill="#2c3e50"></path>
-        <path d="M206.884 32.0891C200.782 32.0891 196.875 27.5238 196.875 20.6758C196.875 13.8716 200.782 9.26238 207.015 9.26238C209.605 9.26238 211.976 10.272 213.38 11.9401V0H219.482V31.7379H213.38V29.3236C212.064 31.0356 209.605 32.0891 206.884 32.0891ZM208.288 26.8214C211.537 26.8214 213.688 24.3631 213.688 20.6758C213.688 16.9445 211.537 14.4862 208.288 14.4862C205.084 14.4862 202.889 16.9445 202.889 20.6758C202.889 24.3631 205.084 26.8214 208.288 26.8214Z" fill="#2c3e50"></path>
-        <path d="M182.164 31.7376V9.61328H188.266V13.3007C189.451 10.5351 191.119 9.61328 193.841 9.61328H196.299V14.7054H192.656C189.627 14.7054 188.266 17.2076 188.266 20.9827V31.7376H182.164Z" fill="#2c3e50"></path>
-        <path d="M165.146 32.0894C159.001 32.0894 155.094 27.5241 155.094 20.6761C155.094 13.8719 159.001 9.2627 165.234 9.2627C167.78 9.2627 170.151 10.2284 171.599 11.8088V9.61388H177.701V31.7382H171.599V29.4117C170.282 31.0798 167.868 32.0894 165.146 32.0894ZM166.507 26.8217C169.756 26.8217 171.907 24.3635 171.907 20.6761C171.907 16.9448 169.756 14.4865 166.507 14.4865C163.303 14.4865 161.108 16.9448 161.108 20.6761C161.108 24.3635 163.303 26.8217 166.507 26.8217Z" fill="#2c3e50"></path>
-        <path d="M137.363 32.0889C129.945 32.0889 123.141 26.7333 123.141 16.3735C123.141 6.0137 130.076 0.658203 138.68 0.658203C146.538 0.658203 152.025 5.09185 152.552 11.7204H145.572C145.089 8.42807 142.499 6.32098 138.549 6.32098C133.325 6.32098 129.769 10.0962 129.769 16.3296C129.769 23.0021 133.676 26.3822 138.724 26.3822C143.114 26.3822 146.143 23.7922 146.143 21.2462C146.143 20.3682 145.748 19.8853 144.826 19.8853H138.988V14.9249H147.46C150.401 14.9249 152.289 16.8125 152.289 19.7975V31.7377H146.45V28.0503C145.353 29.9379 142.017 32.0889 137.363 32.0889Z" fill="#2c3e50"></path>
-        <path d="M119.336 31.7379C115.43 31.7379 112.664 29.2797 112.664 24.9777V0H118.81V24.1437C118.81 25.6801 119.644 26.6019 121.136 26.6019H122.541V31.7379H119.336Z" fill="#20E28F"></path>
-        <path d="M95.865 32.0894C89.7194 32.0894 85.8125 27.5241 85.8125 20.6761C85.8125 13.8719 89.7194 9.2627 95.9528 9.2627C98.4989 9.2627 100.869 10.2284 102.318 11.8088V9.61388H108.42V31.7382H102.318V29.4117C101.001 31.0798 98.5867 32.0894 95.865 32.0894ZM97.2259 26.8217C100.474 26.8217 102.625 24.3635 102.625 20.6761C102.625 16.9448 100.474 14.4865 97.2259 14.4865C94.0213 14.4865 91.8265 16.9448 91.8265 20.6761C91.8265 24.3635 94.0213 26.8217 97.2259 26.8217Z" fill="#20E28F"></path>
-        <path d="M76.3787 31.7379V9.61357H82.4805V31.7379H76.3787ZM76.2031 0H82.7V6.45294H76.2031V0Z" fill="#20E28F"></path>
-        <path d="M62.3587 32.0894C55.4668 32.0894 50.9453 27.129 50.9453 20.6761C50.9453 14.2231 55.4668 9.2627 62.3587 9.2627C68.1532 9.2627 72.7624 12.7745 73.1575 17.9105H67.0118C66.6606 15.9351 64.773 14.4865 62.5343 14.4865C59.1981 14.4865 57.3105 17.0765 57.3105 20.6761C57.3105 24.2757 59.242 26.8217 62.6221 26.8217C64.8608 26.8217 66.6167 25.4609 67.0996 23.4855H73.2892C72.6746 28.402 68.0654 32.0894 62.3587 32.0894Z" fill="#20E28F"></path>
-        <path d="M37.208 32.0894C30.4039 32.0894 25.5312 27.2607 25.5312 20.6761C25.5312 14.0914 30.4039 9.2627 37.208 9.2627C44.0121 9.2627 48.8848 14.0914 48.8848 20.6761C48.8848 27.2607 44.0121 32.0894 37.208 32.0894ZM37.208 26.8217C40.5003 26.8217 42.7391 24.3196 42.7391 20.6761C42.7391 16.9887 40.5003 14.4865 37.208 14.4865C33.9157 14.4865 31.6769 16.9887 31.6769 20.6761C31.6769 24.3196 33.9157 26.8217 37.208 26.8217Z" fill="#20E28F"></path>
-        <path d="M11.9401 32.0889C4.78483 32.0889 0.263385 27.8308 0 21.2901H6.32125C6.58463 24.4068 8.56002 26.3822 11.9401 26.3822C14.8813 26.3822 16.8128 25.153 16.8128 22.8265C16.8128 16.7247 0.790156 21.5534 0.790156 9.48161C0.790156 4.2578 5.26771 0.658203 11.5451 0.658203C18.1736 0.658203 22.6072 4.47729 22.7828 10.3157H16.5494C16.286 7.9013 14.4423 6.32098 11.5451 6.32098C8.9112 6.32098 7.28699 7.55012 7.28699 9.48161C7.28699 15.8468 23.4413 10.4474 23.4413 22.7387C23.4413 28.4893 18.8321 32.0889 11.9401 32.0889Z" fill="#20E28F"></path>
-      </svg>
+      <img src="/footer-logo.svg" alt="AI Efficiency Scorecard Logo" width="150" height="30" />
     </div>
-    <h1>AI Efficiency Scorecard</h1>
-    <h2>Company Not Provided</h2>
-    <div class="cover-details">
-      <p>Prepared for: saleem marm</p>
-      <p>Industry: Property/Real Estate</p>
-      <p>Date: 2025-05-21</p>
-      <p>Report ID: 3BWdIhb6qRZ6aMgA1gsW</p>
+    <h1>AI Efficiency Scorecard for Property/Real Estate</h1>
+    <div class="title-details">
+      <p>Prepared for: Property/Real Estate Industry</p>
+      <p>Report Date: 2025-05-23</p>
+      <p>Report ID: Aa4kIrBYpxsIo1MO6S2a</p>
     </div>
   </div>
 
-  <!-- KEY FINDINGS PAGE -->
+  <!-- Report Overview & User Details -->
+  <div class="page overview-page">
+    <h1>Report Overview & User Details</h1>
+    
+    <div class="info-block no-break">
+      <h3>User Information</h3>
+      <p>User Name: Ahmad Basheer</p>
+      <p>Company Name: Company Not Provided</p>
+      <p>Industry: B2B</p>
+      <p>Email: ahmadbasheerr@gmail.com</p>
+    </div>
+    
+    <div class="info-block no-break">
+      <h3>Score Information</h3>
+      <p>AI Tier: Dabbler</p>
+      <p>Final Score: N/A</p>
+      <p>Report ID: Aa4kIrBYpxsIo1MO6S2a</p>
+    </div>
+    
+    <div class="info-block no-break">
+      <h3>About This Report</h3>
+      <p>This comprehensive assessment provides detailed insights into your organization's current AI maturity level and strategic opportunities for advancement. The following pages contain:</p>
+      <ul>
+        <li>Overall tier and its implications for your business</li>
+        <li>Key strengths identified in your AI adoption journey</li>
+        <li>Critical challenges and areas for improvement</li>
+        <li>Strategic action plan with prioritized recommendations</li>
+        <li>Detailed analysis of each assessment dimension</li>
+        <li>Industry benchmarks and comparative insights</li>
+        <li>Personalized learning path and resources</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Overall Tier -->
+  <div class="page">
+    <h1>Overall Tier: Dabbler</h1>
+    
+    <div class="score-box content-box no-break">
+      <h3>Score: N/A</h3>
+      <p>This score is calculated based on your responses to the AI efficiency assessment, evaluating multiple dimensions of AI readiness and implementation.</p>
+    </div>
+
+    <div class="content-box no-break">
+      <h2>Current Standing</h2>
+      <p>As a Dabbler, your organization is beginning to experiment with AI technologies. This stage is characterized by initial exploration and basic implementation of AI solutions, typically with limited strategic integration.</p>
+    </div>
+
+    <div class="content-box no-break">
+      <h2>What This Means for Your Business</h2>
+      <p>Your current position presents both opportunities and challenges. While you have taken the first steps toward AI adoption, there is significant potential for growth and optimization. The recommendations in this report will help guide your journey toward more advanced AI maturity.</p>
+    </div>
+  </div>
+
+  <!-- Key Findings -->
   <div class="page">
     <h1>Key Findings</h1>
     
-    <h2>Strengths</h2>
-    <div class="strengths-container">
-      <div class="strength-item"><p><strong>Integration of AI in Market Analysis:</strong> Your agency actively uses AI-powered tools for market trend analysis and property value forecasting. By combining external data sources with internal records, you have improved data-driven pricing strategies, which are crucial for competitive positioning in real estate.</p></div><div class="strength-item"><p><strong>Focus on Agent Productivity:</strong> The primary goal of improving agent productivity and efficiency demonstrates a strategic focus on optimizing human resources through AI, directly impacting operational efficiency and client service in real estate.</p></div>
-    </div>
-    
-    <h2>Challenges</h2>
-    <div class="weaknesses-container">
-      <div class="weakness-item"><p><strong>Challenges with AI Integration:</strong> Compatibility issues with legacy systems and the need for middleware customization can hinder seamless AI integration, potentially slowing down digital transformation efforts.</p></div>
-    </div>
-  </div>
+    <div class="strengths-container content-box no-break">
+      <h2>Strengths</h2>
+      <div class="strengths-content">
+        
+        <div class="strength-item no-break">
+          <p><strong>Initiative in Exploring AI:</strong> You have shown initiative by integrating AI tools such as AI-powered CRM for lead management, indicating a proactive approach to leveraging AI for improving operations.</p>
+        </div>
 
-  <!-- ACTION PLAN PAGE -->
-  <div class="page">
-    <h1>Strategic Action Plan</h1>
-    <p class="page-intro">These recommendations are designed to help you improve your AI maturity and achieve your business objectives.</p>
-    
-    <div class="action-plan-container two-column-grid">
-      <div class="action-item">
-            <div class="action-number">1</div>
-            <div class="action-content">
-              <h3>Enhance AI Integration with Legacy Systems</h3>
-              <ul class="compact-list"><li>Conduct a thorough assessment of current systems to identify specific compatibility issues.</li><li>Offer targeted training sessions to IT staff to manage integration challenges effectively.</li></ul>
-            </div>
-          </div>
-<div class="action-item">
-            <div class="action-number">2</div>
-            <div class="action-content">
-              <h3>Improve Data Standardization and Quality</h3>
-              <ul class="compact-list"><li>Implement a centralized data management system to harmonize data formats and sources.</li><li>Establish a cross-departmental data governance committee to oversee data standardization efforts.</li></ul>
-            </div>
-          </div>
-<div class="action-item">
-            <div class="action-number">3</div>
-            <div class="action-content">
-              <h3>Standardize ROI Measurement</h3>
-              <ul class="compact-list"><li>Define a set of core metrics for evaluating AI performance across functions, focusing on lead conversion, time-to-close, and customer satisfaction.</li><li>Schedule regular review meetings to discuss metrics and adjust strategies based on findings.</li></ul>
-            </div>
-          </div>
-<div class="action-item">
-            <div class="action-number">4</div>
-            <div class="action-content">
-              <h3>Formalize AI Feedback Process</h3>
-              <ul class="compact-list"><li>Develop a structured process for collecting and analyzing feedback from staff on AI tool usage.</li><li>Integrate feedback into continuous improvement cycles for AI tools and workflows.</li></ul>
-            </div>
-          </div>
-<div class="action-item">
-            <div class="action-number">5</div>
-            <div class="action-content">
-              <h3>Strengthen AI Governance Policies</h3>
-              <ul class="compact-list"><li>Establish a formal AI governance framework with clear roles, responsibilities, and ethical guidelines.</li><li>Conduct training sessions on AI ethics and compliance for all staff.</li></ul>
-            </div>
-          </div>
-    </div>
-    
-    <!-- Fallback text in case no action plan was found -->
-    <div class="no-action-plan-fallback" style="display: none;">
-      <div class="content-box">
-        <h2 style="color: #ff6b6b;">Action Plan Not Found</h2>
-        <p>Your report may be missing a properly formatted action plan section. Please contact support if you need assistance with strategic recommendations.</p>
+        <div class="strength-item no-break">
+          <p><strong>Awareness of Technological Potential:</strong> Your exploration of emerging technologies like AI, IoT, and Cloud Computing shows a keen awareness of their potential to enhance B2B operations.</p>
+        </div>
+
+        <div class="strength-item no-break">
+          <p><strong>Willingness to Improve Data Practices:</strong> By implementing regular data audits and investing in ETL tools, you demonstrate a commitment to improving data quality and integration, which is crucial for enhancing decision-making.</p>
+        </div>
+
+        <div class="strength-item no-break">
+          <p><strong>Commitment to Collaboration:</strong> The use of collaboration tools like Slack and Microsoft Teams reflects a strong commitment to fostering effective communication and teamwork within your organization.</p>
+        </div>
+
+        <div class="strength-item no-break">
+          <p><strong>Structured Governance Approach:</strong> Establishing a cross-functional governance committee and conducting regular audits shows a strong foundation for maintaining governance frameworks aligned with industry standards.</p>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- DETAILED ANALYSIS PAGE -->
   <div class="page">
-    <h1>Detailed Analysis</h1>
-    <div class="detailed-analysis-content two-column-grid">
-      <div class="dimension-block">
-        <h4 class="dimension-title">AI Maturity Assessment</h4>
-        <div class="dimension-intro">
-          <p><strong>Current AI Maturity Tier: Enabler</strong></p>
-        </div><div class="content-box">
-          <h5>Characteristics of Your Tier</h5>
-          <p>- Typically allocate only 5-10% of IT budget to AI initiatives.<br>- Use basic AI tools like simple chatbots or automated email responders.<br>- Focus on initial steps like data collection and basic analytics, with limited integration across departments.</p>
-        </div></div><div class="dimension-block">
-      <h4 class="dimension-title">Data Quality & Readiness</h4>
-      <div class="dimension-intro">
-        <p>Assessment of your organization's data infrastructure and practices.</p>
-      </div><p><em>No specific data strengths identified in the assessment.</em></p></div><div class="dimension-block">
-      <h4 class="dimension-title">AI Strategy & Implementation</h4>
-      <div class="dimension-intro">
-        <p>Analysis of your current AI approach and strategic positioning.</p>
-      </div><p><em>No specific AI strategy gaps identified in the assessment.</em></p></div><div class="dimension-block">
-      <h4 class="dimension-title">Technology & Tools</h4>
-      <div class="dimension-intro">
-        <p>Evaluation of your technology stack and tool utilization.</p>
-      </div><div class="detailed-recommendation-item">
-          <h5>Recommendation: Integration of AI in Market Analysis</h5>
-          <p>Your agency actively uses AI-powered tools for market trend analysis and property value forecasting. By combining external data sources with internal records, you have improved data-driven pricing strategies, which are crucial for competitive positioning in real estate.</p>
-        </div></div><div class="dimension-block">
-      <h4 class="dimension-title">Team & Organizational Readiness</h4>
-      <div class="dimension-intro">
-        <p>Assessment of collaboration processes and skill development.</p>
-      </div><p><em>No specific team strengths highlighted in the assessment.</em></p></div>
+    <h1>Challenges</h1>
+    
+    <div class="weaknesses-container content-box no-break">
+      <div class="weaknesses-content">
+        
+        <div class="weakness-item no-break">
+          <p><strong>Lack of Formal AI Strategy:</strong> Without a formal AI strategy, efforts may remain siloed and lack long-term direction, impacting overall effectiveness and scalability in the B2B sector.</p>
+        </div>
+
+        <div class="weakness-item no-break">
+          <p><strong>Partial Data Integration:</strong> Moderate effectiveness in data integration suggests potential gaps in utilizing comprehensive data for decision-making, limiting strategic insights.</p>
+        </div>
+
+        <div class="weakness-item no-break">
+          <p><strong>Technological Satisfaction:</strong> Only moderate satisfaction with the current technology stack indicates areas where technological tools may not fully meet strategic objectives.</p>
+        </div>
+
+        <div class="weakness-item no-break">
+          <p><strong>Challenges in Aligning Strategies:</strong> Incomplete integration of sales and marketing strategies can lead to inefficiencies and missed opportunities for cohesive B2B campaigns.</p>
+        </div>
+
+        <div class="weakness-item no-break">
+          <p><strong>Inconsistent Onboarding Processes:</strong> Moderate effectiveness in onboarding processes may hinder the rapid integration of new team members, impacting team efficiency and performance.</p>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Q&A RESPONSES PAGE -->
+  <!-- Strategic Action Plan -->
+  <div class="page">
+    <h1>Strategic Action Plan</h1>
+    <p class="page-intro">These recommendations are designed to help you improve your AI maturity and achieve your business objectives.</p>
+    
+    <div class="action-plan-container">
+      <div class="action-item no-break">
+          <div class="action-number">1</div>
+<div class="action-content">
+            <h3>Introduction to AI Opportunities in B2B</h3>
+            <p>Discuss potential areas where AI can add value.</p>
+          </div>
+<div class="action-item no-break">
+          <div class="action-number">2</div>
+<div class="action-content">
+            <h3>Objective Setting</h3>
+            <p>Define specific, measurable AI goals aligned with strategic priorities.</p>
+          </div>
+<div class="action-item no-break">
+          <div class="action-number">3</div>
+<div class="action-content">
+            <h3>Resource Allocation</h3>
+            <p>Identify necessary resources, including budget and personnel, for AI initiatives.</p>
+          </div>
+<div class="action-item no-break">
+          <div class="action-number">4</div>
+<div class="action-content">
+            <h3>Action Items & Next Steps</h3>
+            <p>Assign responsibilities and establish timelines for pilot projects.</p>
+          </div>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="action-item no-break">
+          <div class="action-number">1</div>
+<div class="action-content">
+            <h3>Identify Key Data Sources</h3>
+            <p>List all data sources used across departments.</p>
+          </div>
+<div class="action-item no-break">
+          <div class="action-number">2</div>
+<div class="action-content">
+            <h3>Assess Data Quality</h3>
+            <p>Evaluate the accuracy and completeness of data sets.</p>
+          </div>
+<div class="action-item no-break">
+          <div class="action-number">3</div>
+<div class="action-content">
+            <h3>Evaluate Data Integration</h3>
+            <p>Review the effectiveness of current data integration practices.</p>
+          </div>
+<div class="action-item no-break">
+          <div class="action-number">4</div>
+<div class="action-content">
+            <h3>Implement Improvements</h3>
+            <p>Develop a plan to address identified gaps and enhance data practices.</p>
+          </div>
+  </div>
+
+  <div class="page">
+    <div class="action-item no-break">
+          <div class="action-number">1</div>
+<div class="action-content">
+            <h3>AI For Everyone by Andrew Ng</h3>
+            <p>An excellent starting point to build foundational AI literacy. This course will help you understand how AI can be applied in business contexts, particularly in B2B settings.</p>
+          </div>
+<div class="action-item no-break">
+          <div class="action-number">2</div>
+<div class="action-content">
+            <h3>Data Management for B2B Success</h3>
+            <p>Focused on improving your data readiness, this resource provides strategies and tools for effective data integration and management.</p>
+          </div>
+<div class="action-item no-break">
+          <div class="action-number">3</div>
+<div class="action-content">
+            <h3>AI in Marketing</h3>
+            <p>Explore practical applications of AI in marketing to enhance your strategic planning capabilities, offering insights into how AI can transform B2B marketing operations.</p>
+          </div>
+  </div>
+
+  <!-- Detailed Analysis -->
+  <div class="page">
+    <h1>Detailed Analysis</h1>
+    
+    <div class="detailed-analysis-content">
+      <div class="dimension-block no-break">
+          <h4 class="dimension-title">AI Maturity Assessment</h4>
+          <div class="dimension-intro">
+            <p><strong>Current AI Maturity Tier: Dabbler</strong></p>
+          </div>
+<div class="content-box">
+            <h5>Characteristics of Your Tier</h5>
+            <p>- Typically use AI for basic tasks like data analysis and simple process automation.<br>- Allocate 1-2% of IT budget to AI initiatives, focusing on exploratory projects.<br>- Only about 20% have formalized AI governance structures, often relying on ad-hoc approaches.</p>
+          </div>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="detailed-analysis-content">
+      <div class="dimension-block no-break">
+          <h4 class="dimension-title">Data Quality & Readiness</h4>
+          <div class="dimension-intro">
+            <p>Assessment of your organization's data infrastructure and practices.</p>
+          </div>
+<div class="dimension-block no-break">
+          <h4 class="dimension-title">AI Strategy & Implementation</h4>
+          <div class="dimension-intro">
+            <p>Evaluation of your AI strategy and execution capabilities.</p>
+          </div>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="detailed-analysis-content">
+      <div class="dimension-block no-break">
+          <h4 class="dimension-title">Technology & Tools</h4>
+          <div class="dimension-intro">
+            <p>Analysis of your current technology stack and tool utilization.</p>
+          </div>
+<div class="dimension-block no-break">
+          <h4 class="dimension-title">Team & Organizational Readiness</h4>
+          <div class="dimension-intro">
+            <p>Assessment of team capabilities and organizational structure.</p>
+          </div>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="detailed-analysis-content">
+      
+    </div>
+  </div>
+
+  <!-- Assessment Responses -->
   <div class="page">
     <h1>Assessment Responses</h1>
     
@@ -613,121 +946,150 @@
       <tbody>
         <tr class="no-break">
         <td>Strategy & Goals</td>
-        <td>To what extent has your real estate agency integrated AI-powered tools for analyzing market trends and predicting property values? Please describe the data sources used, the specific AI models employed (if known), and the impact this has had on your pricing strategies and investment recommendations.</td>
-        <td>Our agency has established regular use of AI-powered tools to analyze market trends and forecast property values. We primarily utilize external data sources, such as MLS listings, economic indicators, and demographic data, combined with our internal sales records. We use AI models integrated into platforms like Tableau and proprietary real estate analytics software, though the specifics of the models are handled by our vendor partners. This has led to more data-driven pricing strategies and has moderately improved the accuracy of our investment recommendations.</td>
+        <td>What are the primary methods your company uses to measure the success of its B2B strategic goals?</td>
+        <td>Key Performance Indicators (KPIs) | Customer Feedback | Revenue Growth | Operational Efficiency</td>
       </tr>
 <tr class="no-break">
         <td>Strategy & Goals</td>
-        <td>Which of the following best describes your real estate agency's primary goal for implementing AI solutions in the next 12 months?</td>
-        <td>Improving agent productivity and efficiency</td>
+        <td>How would you describe your company's approach to aligning sales and marketing strategies in the B2B sector?</td>
+        <td>Our company has established processes to ensure that sales and marketing teams collaborate regularly, including joint planning sessions and shared performance metrics. While we have some alignment on key objectives and use data-driven insights to inform campaigns, there is still room for improvement in integrating strategies and ensuring seamless communication. We are developing more structured workflows and leveraging AI tools to enhance coordination.</td>
       </tr>
 <tr class="no-break">
         <td>Strategy & Goals</td>
-        <td>How satisfied is your real estate agency with the current level of AI maturity across its core business functions?</td>
-        <td>4</td>
+        <td>What level of maturity do you believe your company's B2B strategic planning process currently possesses?</td>
+        <td>3</td>
       </tr>
 <tr class="no-break">
         <td>Strategy & Goals</td>
-        <td>What specific challenges has your property management firm encountered when attempting to integrate AI-powered solutions into existing workflows and legacy systems?</td>
-        <td>Our firm has encountered challenges related to compatibility between AI solutions and legacy property management systems, often requiring additional customization or middleware. Staff training and change management have also been significant hurdles, as employees adapt to new workflows. Additionally, ensuring data quality and security during integration has required extra attention, and some processes have needed to be redesigned to fully leverage AI capabilities.</td>
+        <td>What are the biggest challenges your company faces when setting strategic goals in the B2B industry?</td>
+        <td>Aligning with market trends | Resource allocation | Stakeholder buy-in | Technological integration</td>
       </tr>
 <tr class="no-break">
         <td>Data Readiness</td>
-        <td>To what extent are the data sources used by your real estate brokerage standardized and documented across different departments (e.g., sales, marketing, property management)?</td>
+        <td>What tools or platforms does your company currently use to ensure data accuracy and reliability in your B2B operations?</td>
+        <td>Data Management Software | CRM Systems | Data Validation Tools | Business Intelligence Platforms</td>
+      </tr>
+<tr class="no-break">
+        <td>Data Readiness</td>
+        <td>How effectively does your company integrate data from different sources to enhance decision-making in the B2B sector?</td>
         <td>3</td>
       </tr>
 <tr class="no-break">
         <td>Data Readiness</td>
-        <td>Which of the following data quality issues, if any, does your real estate agency commonly encounter when preparing data for AI-driven applications (e.g., predictive analytics, automated valuation models)?</td>
-        <td>Missing data (e.g., incomplete property records, missing transaction details) | Inaccurate data (e.g., incorrect property attributes, outdated contact information) | Inconsistent data (e.g., different units of measurement, conflicting address formats) | Data silos (e.g., data stored in isolated systems, lack of integration)</td>
+        <td>What specific challenges have you encountered in ensuring data readiness for your B2B operations, and how have you addressed them?</td>
+        <td>We have encountered challenges around data quality, integration from multiple sources, and maintaining data privacy. To address these, we have established regular data audits, implemented data governance policies, and invested in ETL tools to streamline integration. While our processes are improving, we are still working on fully automating data validation and enhancing cross-departmental data consistency.</td>
       </tr>
 <tr class="no-break">
         <td>Data Readiness</td>
-        <td>How frequently does your real estate agency conduct data audits or data quality assessments to ensure the accuracy and reliability of the data used for AI applications?</td>
-        <td>Quarterly</td>
-      </tr>
-<tr class="no-break">
-        <td>Data Readiness</td>
-        <td>Describe the processes your property management firm has in place to ensure compliance with data privacy regulations (e.g., GDPR, CCPA) when collecting, storing, and using data for AI-powered solutions. Please include specific examples of tools or techniques used to anonymize, pseudonymize, or encrypt sensitive data.</td>
-        <td>Our firm has established data governance policies to ensure compliance with data privacy regulations such as GDPR and CCPA. We use regular staff training, data access controls, and documented consent processes. For AI-powered solutions, we commonly use data anonymization and pseudonymization techniques, leveraging tools like Microsoft Azure's built-in privacy features and third-party encryption tools for sensitive data. We are developing automated monitoring to improve compliance and regularly review our practices to address emerging requirements.</td>
+        <td>Which departments in your company are primarily responsible for ensuring data readiness in B2B operations?</td>
+        <td>IT Department | Data Analytics Team | Operations Department | Finance Department</td>
       </tr>
 <tr class="no-break">
         <td>Technology & Tools</td>
-        <td>To what extent has your real estate brokerage invested in dedicated hardware or cloud infrastructure specifically to support the computational demands of AI-driven applications (e.g., machine learning model training, real-time data processing)?</td>
+        <td>What emerging technologies are you currently exploring or implementing to enhance your B2B operations?</td>
+        <td>Artificial Intelligence | Internet of Things (IoT) | Cloud Computing | 5G Technology</td>
+      </tr>
+<tr class="no-break">
+        <td>Technology & Tools</td>
+        <td>How satisfied are you with the current technology stack used in your B2B operations for meeting strategic objectives?</td>
         <td>3</td>
-      </tr>
-<tr class="no-break">
-        <td>Technology & Tools</td>
-        <td>Which of the following AI-powered tools or platforms does your real estate agency currently utilize to enhance agent productivity and streamline workflows?</td>
-        <td>AI-powered CRM systems (e.g., automated task management, lead scoring) | Virtual assistants or chatbots for agent support | AI-driven market analysis and property valuation tools | Automated document generation and contract management software</td>
-      </tr>
-<tr class="no-break">
-        <td>Technology & Tools</td>
-        <td>How would you rate the effectiveness of your current AI-powered tools in improving the accuracy and efficiency of your property valuation process?</td>
-        <td>4</td>
-      </tr>
-<tr class="no-break">
-        <td>Technology & Tools</td>
-        <td>Describe your real estate agency's strategy for training and supporting employees in the effective use of new AI-powered tools and technologies. What specific training methods (e.g., workshops, online courses, one-on-one coaching) are employed, and how do you measure the success of these training initiatives?</td>
-        <td>Our agency has an established approach to training employees on AI-powered tools, utilizing a mix of group workshops, online self-paced courses, and periodic one-on-one coaching sessions for targeted support. We focus on practical, hands-on learning and encourage knowledge sharing among teams. Success is measured through employee feedback surveys, monitoring tool usage rates, and tracking improvements in workflow efficiency and client satisfaction. Our strategy is still developing as we continue to optimize content and frequency based on user needs and technology updates.</td>
-      </tr>
-<tr class="no-break">
-        <td>Team Skills & Process</td>
-        <td>To what extent has your real estate agency formalized a process for gathering feedback from agents and staff regarding their experience with AI-powered tools and incorporating that feedback into ongoing development and improvement efforts?</td>
-        <td>3</td>
-      </tr>
-<tr class="no-break">
-        <td>Team Skills & Process</td>
-        <td>Which of the following best describes how your real estate agency structures its teams to effectively manage and implement AI initiatives?</td>
-        <td>A hybrid approach with a central AI team providing guidance and support to decentralized teams</td>
-      </tr>
-<tr class="no-break">
-        <td>Team Skills & Process</td>
-        <td>What specific metrics does your real estate agency use to evaluate the performance and ROI of AI-driven tools implemented across different business functions (e.g., lead generation, property management, market analysis)?</td>
-        <td>We regularly track key metrics such as lead conversion rates, time-to-close, customer satisfaction scores, and cost savings for AI-driven tools in lead generation and property management. For market analysis, we monitor forecast accuracy and speed of reporting. While we have established some consistent metrics, we are still working on standardizing ROI measurement across all functions to ensure comprehensive evaluation of AI investments.</td>
-      </tr>
-<tr class="no-break">
-        <td>Team Skills & Process</td>
-        <td>What specific metrics does your real estate agency use to evaluate the performance and ROI of AI-driven tools implemented across different business functions (e.g., lead generation, property management, market analysis)?</td>
-        <td>We regularly track key metrics such as lead conversion rates, time-to-close, customer satisfaction scores, and cost savings for AI-driven tools in lead generation and property management. For market analysis, we monitor forecast accuracy and speed of reporting. While we have established some consistent metrics, we are still working on standardizing ROI measurement across all functions to ensure comprehensive evaluation of AI investments.</td>
-      </tr>
-<tr class="no-break">
-        <td>Governance & Measurement</td>
-        <td>How does your real estate agency ensure that AI-driven decisions (e.g., lead scoring, property valuation) are regularly audited and validated to prevent bias and ensure fairness?</td>
-        <td>We have established processes to regularly review and validate the outputs of our AI-driven tools, such as lead scoring and property valuation models. Our teams perform periodic audits using sample data to check for accuracy and potential bias. We also compare AI recommendations with human expert reviews to identify any inconsistencies, and we are developing documentation standards to track these validations for ongoing improvement.</td>
-      </tr>
-<tr class="no-break">
-        <td>Governance & Measurement</td>
-        <td>To what extent has your real estate agency established formal policies and procedures for governing the use of AI across different departments and functions?</td>
-        <td>3</td>
-      </tr>
-<tr class="no-break">
-        <td>Governance & Measurement</td>
-        <td>Which of the following methods does your real estate agency primarily use to track the ROI of AI initiatives?</td>
-        <td>Agent productivity gains</td>
-      </tr>
-<tr class="no-break">
-        <td>Governance & Measurement</td>
-        <td>Which of the following areas does your real estate agency prioritize for developing Key Performance Indicators (KPIs) to measure the impact of AI-driven solutions?</td>
-        <td>Lead generation effectiveness (e.g., lead quality, conversion rates) | Agent productivity (e.g., deals closed, time saved per transaction) | Marketing campaign performance (e.g., click-through rates, cost per acquisition) | Client satisfaction (e.g., survey scores, repeat business)</td>
       </tr>
       </tbody>
     </table>
   </div>
 
-  <!-- LEARNING PATH PAGE -->
+  <div class="page">
+    <table class="qa-table">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Question</th>
+          <th>Response</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="no-break">
+        <td>Technology & Tools</td>
+        <td>Can you describe a specific instance where a technology tool significantly improved your B2B operations?</td>
+        <td>We recently integrated an AI-powered CRM tool that has significantly improved our lead management process. By automating lead scoring and follow-ups, our sales team has been able to prioritize high-value prospects more efficiently. This has led to faster response times and a moderate increase in conversion rates. The tool is now regularly used across our sales department, and we are developing further integrations to optimize its impact.</td>
+      </tr>
+<tr class="no-break">
+        <td>Technology & Tools</td>
+        <td>What level of adoption does your company currently have for automation tools in its B2B processes?</td>
+        <td>Partially Implemented</td>
+      </tr>
+<tr class="no-break">
+        <td>Team Skills & Process</td>
+        <td>How does your team ensure effective communication and collaboration during B2B project execution?</td>
+        <td>Our team ensures effective communication and collaboration through regular project meetings, shared digital workspaces, and using collaboration tools like Slack and Microsoft Teams. We have established processes for knowledge sharing and project updates, but we are still optimizing cross-functional alignment and workflow integrations to further improve efficiency and response times during B2B project execution.</td>
+      </tr>
+<tr class="no-break">
+        <td>Team Skills & Process</td>
+        <td>Which skills do you consider most critical for your team's effectiveness in B2B operations?</td>
+        <td>Technical Expertise | Communication Skills | Project Management | Customer Relationship Management</td>
+      </tr>
+<tr class="no-break">
+        <td>Team Skills & Process</td>
+        <td>How would you rate the effectiveness of your team's current process for onboarding new team members in B2B operations?</td>
+        <td>3</td>
+      </tr>
+<tr class="no-break">
+        <td>Team Skills & Process</td>
+        <td>How would you rate the effectiveness of your team's current process for onboarding new team members in B2B operations?</td>
+        <td>3</td>
+      </tr>
+<tr class="no-break">
+        <td>Governance & Measurement</td>
+        <td>How does your company currently measure the effectiveness of governance frameworks in its B2B operations?</td>
+        <td>Regular Audits | Compliance Metrics | Performance Reviews | Stakeholder Feedback</td>
+      </tr>
+<tr class="no-break">
+        <td>Governance & Measurement</td>
+        <td>What challenges has your company faced in implementing governance frameworks for B2B operations, and how have you addressed them?</td>
+        <td>We have encountered challenges such as aligning governance standards across different business units, ensuring compliance with evolving regulations, and integrating governance with existing workflows. To address these issues, we have established a cross-functional governance committee, implemented regular training, and adopted digital tools for policy management. While progress has been made, we continue to refine our frameworks to improve consistency and adaptability.</td>
+      </tr>
+<tr class="no-break">
+        <td>Governance & Measurement</td>
+        <td>How frequently does your company review and update its KPI metrics for governance in B2B operations?</td>
+        <td>Quarterly</td>
+      </tr>
+<tr class="no-break">
+        <td>Governance & Measurement</td>
+        <td>How do you ensure that your B2B governance frameworks remain aligned with industry standards and regulatory requirements?</td>
+        <td>We have established governance frameworks that are regularly reviewed and updated to stay aligned with industry standards and regulatory requirements. Our compliance team monitors changes in relevant regulations, and we conduct periodic audits and training sessions. While our processes are organized, we are still working on automating some aspects and ensuring consistent alignment across all departments.</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Recommended Learning Path -->
   <div class="page">
     <h1>Recommended Learning Path</h1>
     
     <div class="learning-path-container">
-      <p>No learning path detailed in the expected format.</p>
+      <div class="content-box no-break">
+          <h4>AI For Everyone by Andrew Ng:</h4>
+          <p>An excellent starting point to build foundational AI literacy. This course will help you understand how AI can be applied in business contexts, particularly in B2B settings.</p>
+        </div>
+<div class="content-box no-break">
+          <h4>Data Management for B2B Success:</h4>
+          <p>Focused on improving your data readiness, this resource provides strategies and tools for effective data integration and management.</p>
+        </div>
     </div>
   </div>
 
-  <!-- CONTACT PAGE -->
+  <div class="page">
+    <div class="learning-path-container">
+      <div class="content-box no-break">
+          <h4>AI in Marketing:</h4>
+          <p>Explore practical applications of AI in marketing to enhance your strategic planning capabilities, offering insights into how AI can transform B2B marketing operations.</p>
+        </div>
+    </div>
+  </div>
+
+  <!-- Contact Information (Page 17) -->
   <div class="page">
     <h1>Contact Information</h1>
-    
     <div class="contact-section">
       <h3 class="contact-heading">For further discussion or implementation support, please contact us.</h3>
       <p>Social Garden<br>
@@ -766,4 +1128,4 @@
     </div>
   </div>
 </body>
-</html> 
+</html>

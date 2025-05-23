@@ -248,9 +248,9 @@ const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({
                   Processing...
                 </span>
               ) : reportMarkdown ? (
-                'Get Your Report'
+                "View Your Scorecard"
               ) : (
-                'Continue Assessment'
+                "Continue to Assessment"
               )}
             </button>
           </div>

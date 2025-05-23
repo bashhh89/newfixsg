@@ -13,7 +13,6 @@ const defaultSidebarLinks = [
   { title: 'Checklists', href: '/learning-hub' },
   { title: 'Prompt Library', href: '/learning-hub' },
   { title: 'Templates', href: '/learning-hub' },
-  { title: 'Recommended Tools', href: '/learning-hub/recommended-tools' },
   { title: 'Mini Courses', href: '/learning-hub' },
 ];
 
@@ -71,7 +70,6 @@ export default function SidebarNav({
   // Determine if we're in a course page (to handle navigation differently)
   const isInCoursePage = pathname && 
     pathname !== '/learning-hub' && 
-    pathname !== '/learning-hub/recommended-tools' &&
     pathname.startsWith('/learning-hub/');
 
   // Handle navigation from sidebar
@@ -81,13 +79,8 @@ export default function SidebarNav({
     
     // If we're in a course page or other deep page, we need to navigate back to learning hub
     if (isInCoursePage) {
-      // For recommended tools, use its direct URL
-      if (section === 'Recommended Tools') {
-        router.push('/learning-hub/recommended-tools');
-      } else {
-        // For all other sections, navigate back to learning hub with the section in query params
-        router.push(`/learning-hub?section=${encodeURIComponent(section)}&reportId=${reportId}`);
-      }
+      // For all sections, navigate back to learning hub with the section in query params
+      router.push(`/learning-hub?section=${encodeURIComponent(section)}&reportId=${reportId}`);
     }
     // If we're already on the learning hub main page, the section change is handled by the parent component
   };
@@ -161,17 +154,18 @@ export default function SidebarNav({
         </div>
         
         {/* Navigation - Enhanced with better hover/active states */}
-        <nav className="flex flex-col gap-2 mt-2">
+        <nav className="flex flex-col gap-3 mt-6">
+          <h3 className="text-white font-semibold text-sm uppercase tracking-wider mb-1 pl-2">Learning Hub Sections</h3>
           {links.map((link) => (
             <button
               key={link.title}
               type="button"
               onClick={() => handleNavigation(link.title, link.href)}
               className={
-                'flex items-center rounded-lg px-5 py-4 font-semibold text-lg transition-all duration-150 text-left w-full font-plus-jakarta ' +
+                'flex items-center rounded-lg px-5 py-5 font-semibold text-lg transition-all duration-200 text-left w-full font-plus-jakarta ' +
                 (activeSection === link.title
-                  ? 'bg-sg-bright-green text-sg-dark-teal font-bold border-l-4 border-white shadow-md relative overflow-hidden'
-                  : 'text-white bg-transparent hover:bg-sg-bright-green/20 hover:text-sg-bright-green hover:border-l-2 hover:border-sg-bright-green/50') +
+                  ? 'bg-sg-bright-green text-sg-dark-teal font-bold shadow-lg transform scale-105 relative overflow-hidden'
+                  : 'text-white bg-transparent hover:bg-sg-bright-green/20 hover:text-sg-bright-green') +
                 ' focus:outline-none focus:ring-2 focus:ring-sg-bright-green'
               }
               tabIndex={0}

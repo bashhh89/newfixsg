@@ -6,7 +6,6 @@ import Image from 'next/image';
 import InteractivePlaceholder from '@/components/InteractivePlaceholder';
 import SidebarNav from '../../components/learning-hub/SidebarNav';
 import ToolCard from '../../components/learning-hub/ToolCard';
-import { masterToolList } from './recommended-tools/toolData';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { miniCourses } from '../../lib/learningHubData';
 import MiniCourseCard from '../../components/learning-hub/MiniCourseCard';
@@ -19,8 +18,6 @@ type UserTier = 'Dabbler' | 'Enabler' | 'Leader';
 const sidebarLinks = [
   { title: 'Checklists', href: '#' },
   { title: 'Prompt Library', href: '#' },
-  { title: 'Templates', href: '#' },
-  { title: 'Recommended Tools', href: '/learning-hub/recommended-tools' },
   { title: 'Mini Courses', href: '#' },
 ];
 
@@ -1537,205 +1534,6 @@ const samplePrompts: PromptWithPlaceholders[] = [
   },
 ];
 
-// --- Recommended Tools Tab Component ---
-function RecommendedToolsTab({ userTier }: { userTier: UserTier }) {
-  // Simulated user profile
-  const simulatedUserProfile = {
-    aiReadinessTier: userTier, // Use the passed prop instead of hardcoded value
-    keyChallengesOrOpportunities: ['personalizing_email_outreach', 'creating_engaging_videos_quickly'],
-  };
-
-  const mainCategories = [
-    'All',
-    'Content Creation',
-    'Video & Audio',
-    'Productivity & Automation',
-    'Sales & Outreach',
-    'Data & Insights',
-    'Social Media',
-    'AI Assistant',
-  ];
-
-  const allCategories = Array.from(new Set(masterToolList.map(t => t.uiCategory)));
-  const allChallenges = Array.from(new Set(masterToolList.flatMap(t => t.solvesChallenges)));
-
-  // Get the top 8 most common challenges
-  const challengeCounts = allChallenges.map(ch => ({
-    name: ch,
-    count: masterToolList.filter(t => t.solvesChallenges.includes(ch)).length
-  }));
-  const sortedChallenges = challengeCounts.sort((a, b) => b.count - a.count).map(c => c.name);
-  const topChallenges = sortedChallenges.slice(0, 8);
-  const moreChallenges = sortedChallenges.slice(8);
-
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [search, setSearch] = useState('');
-  const [selectedChallenges, setSelectedChallenges] = useState<string[]>([]);
-  const [showMoreFilters, setShowMoreFilters] = useState(false);
-  const [showChallengeInfo, setShowChallengeInfo] = useState(false);
-  const [showCategoryInfo, setShowCategoryInfo] = useState(false);
-
-  // Only show tools for the user's tier
-  const tierFiltered = masterToolList.filter(tool => tool.bestForTiers.includes(simulatedUserProfile.aiReadinessTier));
-
-  // Filter by selected challenges (if any)
-  const challengeFiltered = selectedChallenges.length === 0
-    ? tierFiltered
-    : tierFiltered.filter(tool => tool.solvesChallenges.some(ch => selectedChallenges.includes(ch)));
-
-  // Filter by category
-  const categoryFiltered = selectedCategory === 'All'
-    ? challengeFiltered
-    : challengeFiltered.filter(tool => tool.uiCategory === selectedCategory);
-
-  // Filter by search
-  const filteredTools = categoryFiltered.filter(tool =>
-    tool.toolName.toLowerCase().includes(search.toLowerCase()) ||
-    tool.briefDescription.toLowerCase().includes(search.toLowerCase())
-  );
-
-  return (
-    <div className="w-full max-w-6xl mx-auto py-10 px-4 md:px-8 animate-fade-in">
-      <div className="mb-10">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-[#004851] mb-3">Recommended AI Tools for You</h1>
-        <p className="text-lg text-gray-700 max-w-2xl">
-          Based on your AI readiness and identified needs, here are some tools that can help you make significant progress. Our pro tips will guide you on how to get the most out of them!
-        </p>
-      </div>
-      {/* Filter by Challenge */}
-      <div className="mb-2 flex items-center gap-2">
-        <span className="font-semibold text-[#004851] text-base">Filter by Challenge</span>
-        <button
-          aria-label="What is a challenge filter?"
-          className="text-[#68F6C8] hover:text-[#004851] focus:outline-none"
-          onMouseEnter={() => setShowChallengeInfo(true)}
-          onMouseLeave={() => setShowChallengeInfo(false)}
-          onFocus={() => setShowChallengeInfo(true)}
-          onBlur={() => setShowChallengeInfo(false)}
-          tabIndex={0}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#68F6C8" strokeWidth="2" fill="white" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4m0-4h.01" stroke="#68F6C8" /></svg>
-        </button>
-        {showChallengeInfo && (
-          <span className="ml-2 bg-white border border-gray-200 rounded px-3 py-2 text-xs text-gray-700 shadow-lg absolute z-30">
-            Filter tools by the problem you want to solve (e.g. "Reduce manual tasks").
-          </span>
-        )}
-      </div>
-      <div className="flex flex-wrap gap-2 items-center mb-6">
-        {topChallenges.map(challenge => (
-          <button
-            key={challenge}
-            className={
-              'px-3 py-1 rounded-full text-xs font-semibold border transition-all duration-150 ' +
-              (selectedChallenges.includes(challenge)
-                ? 'bg-[#68F6C8] text-[#004851] border-[#68F6C8] shadow'
-                : 'bg-white text-gray-700 border-gray-200 hover:bg-[#68F6C8]/10 hover:text-[#004851]')
-            }
-            onClick={() => setSelectedChallenges(selectedChallenges.includes(challenge)
-              ? selectedChallenges.filter(c => c !== challenge)
-              : [...selectedChallenges, challenge])}
-            type="button"
-          >
-            {challenge.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-          </button>
-        ))}
-        {moreChallenges.length > 0 && (
-          <div className="relative">
-            <button
-              className="px-3 py-1 rounded-full text-xs font-semibold border bg-white text-gray-700 border-gray-200 hover:bg-[#68F6C8]/10 hover:text-[#004851] ml-2"
-              onClick={() => setShowMoreFilters(v => !v)}
-              type="button"
-            >
-              More Filters
-            </button>
-            {showMoreFilters && (
-              <div className="absolute z-20 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 min-w-[180px] max-h-60 overflow-y-auto">
-                {moreChallenges.map(challenge => (
-                  <button
-                    key={challenge}
-                    className={
-                      'block w-full text-left px-3 py-1 rounded text-xs font-semibold border-b border-gray-100 last:border-b-0 ' +
-                      (selectedChallenges.includes(challenge)
-                        ? 'bg-[#68F6C8] text-[#004851]'
-                        : 'bg-white text-gray-700 hover:bg-[#68F6C8]/10 hover:text-[#004851]')
-                    }
-                    onClick={() => setSelectedChallenges(selectedChallenges.includes(challenge)
-                      ? selectedChallenges.filter(c => c !== challenge)
-                      : [...selectedChallenges, challenge])}
-                    type="button"
-                  >
-                    {challenge.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-      {/* Divider */}
-      <div className="w-full h-[1.5px] bg-gray-100 my-6 rounded" />
-      {/* Filter by Category */}
-      <div className="mb-2 flex items-center gap-2 mt-2">
-        <span className="font-semibold text-[#004851] text-base">Filter by Category</span>
-        <button
-          aria-label="What is a category filter?"
-          className="text-[#68F6C8] hover:text-[#004851] focus:outline-none"
-          onMouseEnter={() => setShowCategoryInfo(true)}
-          onMouseLeave={() => setShowCategoryInfo(false)}
-          onFocus={() => setShowCategoryInfo(true)}
-          onBlur={() => setShowCategoryInfo(false)}
-          tabIndex={0}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#68F6C8" strokeWidth="2" fill="white" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4m0-4h.01" stroke="#68F6C8" /></svg>
-        </button>
-        {showCategoryInfo && (
-          <span className="ml-2 bg-white border border-gray-200 rounded px-3 py-2 text-xs text-gray-700 shadow-lg absolute z-30">
-            Browse tools by type or function (e.g. "Content Creation").
-          </span>
-        )}
-      </div>
-      <div className="flex flex-wrap gap-3 items-center mb-8">
-        {mainCategories.map(cat => (
-          <button
-            key={cat}
-            className={
-              'px-6 py-2 rounded-full font-semibold text-base transition-all duration-150 ' +
-              (selectedCategory === cat
-                ? 'bg-[#004851] text-white shadow-lg border-2 border-[#68F6C8] scale-105'
-                : 'bg-gray-100 text-[#004851] border border-gray-200 hover:bg-[#68F6C8]/10 hover:text-[#004851]')
-            }
-            onClick={() => setSelectedCategory(cat)}
-            type="button"
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
-      {/* Search bar */}
-      <div className="mb-8 flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <input
-          type="text"
-          placeholder="Search tools..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full sm:w-72 px-4 py-2 rounded-lg border border-gray-200 shadow-sm focus:ring-2 focus:ring-[#68F6C8] focus:outline-none text-base"
-        />
-      </div>
-      {/* Tool Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredTools.length === 0 ? (
-          <div className="col-span-full text-center text-gray-400 py-16 text-lg">No tools found for your selection.</div>
-        ) : (
-          filteredTools.map((tool) => (
-            <ToolCard key={tool.id} tool={tool} />
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-
 export default function LearningHubPage() {
   const [activeSection, setActiveSection] = useState('Checklists');
   const [isClient, setIsClient] = useState(false);
@@ -1743,6 +1541,10 @@ export default function LearningHubPage() {
   const [userTier, setUserTier] = useState<UserTier>('Dabbler');
   const searchParams = useSearchParams();
   const reportId = searchParams?.get('reportId');
+  
+  // Define the selectedChecklistTitle state here at the top level
+  const [selectedChecklistTitle, setSelectedChecklistTitle] = useState<string | null>(null);
+  const currentUserTier = userTier;
   
   // Handle section from URL query parameter (for navigation from course pages)
   useEffect(() => {
@@ -1752,7 +1554,7 @@ export default function LearningHubPage() {
       
       if (sectionParam) {
         // Only set if it's a valid section
-        const validSections = ['Checklists', 'Prompt Library', 'Templates', 'Recommended Tools', 'Mini Courses'];
+        const validSections = ['Checklists', 'Prompt Library', 'Templates', 'Mini Courses'];
         if (validSections.includes(sectionParam)) {
           setActiveSection(sectionParam);
         }
@@ -1777,10 +1579,6 @@ export default function LearningHubPage() {
       </div>
     </div>
   );
-
-  // Add the missing state variables
-  const [selectedChecklistTitle, setSelectedChecklistTitle] = useState<string | null>(null);
-  const currentUserTier = userTier;
   
   // Set user tier from query parameters if available
   useEffect(() => {
@@ -1943,7 +1741,52 @@ export default function LearningHubPage() {
     );
   }
 
-  // --- Restore missing functions ---
+  // --- Progress calculation ---
+  function calculateProgress(tier: UserTier) {
+    const items = trackableItems[tier] || [];
+    let completed = 0;
+    for (const item of items) {
+      if (item.type === 'checklist') {
+        if (localStorage.getItem('SG_progress_' + item.id + '_viewed') === 'true') completed++;
+      } else if (item.type === 'prompt') {
+        if (localStorage.getItem('SG_progress_' + item.id + '_copied') === 'true') completed++;
+      }
+    }
+    return items.length > 0 ? Math.round((completed / items.length) * 100) : 0;
+  }
+
+  // --- On mount and tier change, update progress and tip ---
+  useEffect(() => {
+    setProgressPercent(calculateProgress(currentUserTier));
+    setTipText(getTipOfTheDay());
+  }, [currentUserTier]);
+
+  // --- Helper to update progress after interaction ---
+  function updateProgressBar() {
+    setProgressPercent(calculateProgress(currentUserTier));
+  }
+
+  // --- Checklist view tracking ---
+  function handleChecklistView(title: string) {
+    try {
+      localStorage.setItem('SG_progress_' + title + '_viewed', 'true');
+    } catch {}
+    updateProgressBar();
+    setSelectedChecklistTitle(title);
+  }
+
+  // --- Prompt copy tracking ---
+  function handlePromptCopy(promptId: string) {
+    try {
+      localStorage.setItem('SG_progress_' + promptId + '_copied', 'true');
+    } catch {}
+    updateProgressBar();
+  }
+
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [tipText, setTipText] = useState(tips[0]);
+
+  // Move renderChecklistsContent inside the component
   const renderChecklistsContent = () => {
     if (selectedChecklistTitle) {
       // Use tieredChecklists for the first four checklists
@@ -2007,12 +1850,6 @@ export default function LearningHubPage() {
     </div>
   );
 
-  // --- Recommended Tools Render Logic ---
-  const renderToolsContent = () => {
-    // Use the RecommendedToolsTab component instead of redefining everything
-    return <RecommendedToolsTab userTier={currentUserTier} />;
-  };
-
   // Add a new render function for Mini Courses
   const renderMiniCoursesContent = () => {
     return (
@@ -2057,8 +1894,6 @@ export default function LearningHubPage() {
     mainContent = renderPromptLibraryContent();
   } else if (activeSection === 'Templates') {
     mainContent = renderTemplatesContent();
-  } else if (activeSection === 'Recommended Tools') {
-    mainContent = renderToolsContent();
   } else if (activeSection === 'Mini Courses') {
     mainContent = renderMiniCoursesContent();
   } else {
@@ -2091,51 +1926,6 @@ export default function LearningHubPage() {
     );
   }
 
-  // --- Progress calculation ---
-  function calculateProgress(tier: UserTier) {
-    const items = trackableItems[tier] || [];
-    let completed = 0;
-    for (const item of items) {
-      if (item.type === 'checklist') {
-        if (localStorage.getItem('SG_progress_' + item.id + '_viewed') === 'true') completed++;
-      } else if (item.type === 'prompt') {
-        if (localStorage.getItem('SG_progress_' + item.id + '_copied') === 'true') completed++;
-      }
-    }
-    return items.length > 0 ? Math.round((completed / items.length) * 100) : 0;
-  }
-
-  // --- On mount and tier change, update progress and tip ---
-  useEffect(() => {
-    setProgressPercent(calculateProgress(currentUserTier));
-    setTipText(getTipOfTheDay());
-  }, [currentUserTier]);
-
-  // --- Helper to update progress after interaction ---
-  function updateProgressBar() {
-    setProgressPercent(calculateProgress(currentUserTier));
-  }
-
-  // --- Checklist view tracking ---
-  function handleChecklistView(title: string) {
-    try {
-      localStorage.setItem('SG_progress_' + title + '_viewed', 'true');
-    } catch {}
-    updateProgressBar();
-    setSelectedChecklistTitle(title);
-  }
-
-  // --- Prompt copy tracking ---
-  function handlePromptCopy(promptId: string) {
-    try {
-      localStorage.setItem('SG_progress_' + promptId + '_copied', 'true');
-    } catch {}
-    updateProgressBar();
-  }
-
-  const [progressPercent, setProgressPercent] = useState(0);
-  const [tipText, setTipText] = useState(tips[0]);
-
   return (
     <main className="flex min-h-screen font-plus-jakarta">
       {/* Sidebar */}
@@ -2162,33 +1952,11 @@ export default function LearningHubPage() {
               Explore resources, templates, and tools to help you implement AI effectively in your business.
             </p>
 
-            {/* Section navigation tabs */}
-            <div className="border-b border-gray-200 mb-8">
-              <nav className="-mb-px flex space-x-6 overflow-x-auto pb-1" aria-label="Learning Hub Sections">
-                {['Checklists', 'Prompt Library', 'Templates', 'Recommended Tools', 'Mini Courses'].map(section => (
-                  <button
-                    key={section}
-                    onClick={() => setActiveSection(section)}
-                    className={`
-                      whitespace-nowrap py-3 px-1 border-b-2 font-medium text-md transition-colors
-                      ${activeSection === section 
-                        ? 'border-sg-bright-green text-sg-bright-green' 
-                        : 'border-transparent text-gray-500 hover:text-sg-dark-teal hover:border-gray-300'}
-                    `}
-                  >
-                    {section}
-                  </button>
-                ))}
-              </nav>
-            </div>
+            {/* Remove the section navigation tabs */}
             
             {/* Section content */}
             <div className="overflow-visible mb-10">
-              {activeSection === 'Checklists' && renderChecklistsContent()}
-              {activeSection === 'Prompt Library' && renderPromptLibraryContent()}
-              {activeSection === 'Templates' && renderTemplatesContent()}
-              {activeSection === 'Recommended Tools' && renderToolsContent()}
-              {activeSection === 'Mini Courses' && renderMiniCoursesContent()}
+              {mainContent}
             </div>
 
             {/* Action button */}
@@ -2206,4 +1974,4 @@ export default function LearningHubPage() {
       </div>
     </main>
   );
-} 
+}

@@ -7,6 +7,7 @@ export interface MiniCourseInfo {
   slug: string; // Full path from /learning-hub
   duration?: string; // Optional course duration (e.g., "30 min")
   modules?: number; // Optional number of modules/lessons
+  type?: string; // Type of course for categorization and icon selection
 }
 
 export const miniCourses: MiniCourseInfo[] = [
@@ -17,7 +18,8 @@ export const miniCourses: MiniCourseInfo[] = [
     tier: ["Dabbler"],
     slug: "/learning-hub/prompting-101",
     duration: "30 min",
-    modules: 5
+    modules: 5,
+    type: "Prompting"
   },
   {
     id: "ai-superpowers-5-wins",
@@ -26,7 +28,8 @@ export const miniCourses: MiniCourseInfo[] = [
     tier: ["Dabbler"],
     slug: "/learning-hub/course/ai-superpowers-5-wins",
     duration: "30 min",
-    modules: 5
+    modules: 5,
+    type: "Quick Wins"
   },
   {
     id: "first-ai-wins",
@@ -35,7 +38,8 @@ export const miniCourses: MiniCourseInfo[] = [
     tier: ["Dabbler"],
     slug: "/learning-hub/first-ai-wins",
     duration: "45 min",
-    modules: 4
+    modules: 4,
+    type: "Quick Wins"
   },
   { 
     id: "advanced-prompting-techniques", 
@@ -44,7 +48,8 @@ export const miniCourses: MiniCourseInfo[] = [
     tier: ["Enabler", "Leader"], 
     slug: "/learning-hub/advanced-prompting-techniques",
     duration: "60 min",
-    modules: 5
+    modules: 5,
+    type: "Advanced Prompting"
   },
   { 
     id: "ai-driven-organization", 
@@ -53,7 +58,8 @@ export const miniCourses: MiniCourseInfo[] = [
     tier: ["Leader"], 
     slug: "/learning-hub/ai-driven-organization",
     duration: "90 min",
-    modules: 6
+    modules: 6,
+    type: "Leadership"
   },
   { 
     id: "ai-content-strategy", 
@@ -62,7 +68,8 @@ export const miniCourses: MiniCourseInfo[] = [
     tier: ["Dabbler", "Enabler"], 
     slug: "/learning-hub/ai-content-strategy",
     duration: "50 min",
-    modules: 4
+    modules: 4,
+    type: "Content Strategy"
   },
   { 
     id: "quick-productivity-boosts", 
@@ -71,7 +78,8 @@ export const miniCourses: MiniCourseInfo[] = [
     tier: ["Dabbler"], 
     slug: "/learning-hub/quick-productivity-boosts",
     duration: "30 min",
-    modules: 3
+    modules: 3,
+    type: "Productivity"
   },
   { 
     id: "ai-project-management", 
@@ -80,7 +88,8 @@ export const miniCourses: MiniCourseInfo[] = [
     tier: ["Enabler"], 
     slug: "/learning-hub/ai-project-management",
     duration: "60 min",
-    modules: 5
+    modules: 5,
+    type: "Project Management"
   },
   { 
     id: "ai-jargon-buster", 
@@ -89,7 +98,8 @@ export const miniCourses: MiniCourseInfo[] = [
     tier: ["Dabbler"], 
     slug: "/learning-hub/ai-jargon-buster",
     duration: "25 min",
-    modules: 3
+    modules: 3,
+    type: "Terminology"
   },
   { 
     id: "my-first-ai-tool", 
@@ -98,7 +108,8 @@ export const miniCourses: MiniCourseInfo[] = [
     tier: ["Dabbler", "Enabler"], 
     slug: "/learning-hub/my-first-ai-tool",
     duration: "70 min",
-    modules: 6
+    modules: 6,
+    type: "Tool Building"
   },
   { 
     id: "ai-model-arsenal", 
@@ -107,7 +118,8 @@ export const miniCourses: MiniCourseInfo[] = [
     tier: ["Enabler"], 
     slug: "/learning-hub/ai-model-arsenal",
     duration: "45 min",
-    modules: 4
+    modules: 4,
+    type: "AI Models"
   },
   { 
     id: "brand-ai-digital-twin", 
@@ -116,7 +128,8 @@ export const miniCourses: MiniCourseInfo[] = [
     tier: ["Enabler"], 
     slug: "/learning-hub/brand-ai-digital-twin",
     duration: "60 min",
-    modules: 5
+    modules: 5,
+    type: "Brand Development"
   }
 ];
 

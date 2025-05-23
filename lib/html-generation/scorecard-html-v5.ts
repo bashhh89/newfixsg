@@ -37,78 +37,68 @@ interface ScoreCardData {
  */
 function parseMarkdown(markdown: string): string {
   if (!markdown) return '';
-  
-  let html = markdown
-    // Headers
-    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-    .replace(/^#### (.*$)/gim, '<h4>$1</h4>')
-    
-    // Bold text (two patterns)
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/__(.*?)__/g, '<strong>$1</strong>')
-    
-    // Italic text (two patterns)
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/_(.*?)_/g, '<em>$1</em>')
-    
-    // Lists (bullet points)
-    .replace(/^\s*[\*\-]\s+(.*$)/gim, '<li>$1</li>')
-    
-    // Numbered lists
-    .replace(/^\s*(\d+)\.\s+(.*$)/gim, '<li value="$1">$2</li>')
-    
-    // Links
-    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" class="report-link">$1</a>')
-    
-    // Paragraphs (ensure double newlines become paragraphs)
-    .replace(/\n\s*\n/g, '</p><p>');
-  
-  // Wrap list items in ul or ol tags
-  let inList = false;
-  let inOrderedList = false;
-  const lines = html.split('\n');
-  html = '';
-  
-  for (const line of lines) {
-    // Check for ordered list items
-    if (line.match(/<li value=/)) {
-      if (!inList || !inOrderedList) {
-        if (inList) html += '</ul>'; // Close unordered list if we were in one
-        html += '<ol class="numbered-list">';
-        inList = true;
-        inOrderedList = true;
+
+  let html = markdown;
+
+  // Headers (ensure # is consumed)
+  html = html.replace(/^#\s+(.*$)/gim, '<h1>$1</h1>');
+  html = html.replace(/^##\s+(.*$)/gim, '<h2>$1</h2>');
+  html = html.replace(/^###\s+(.*$)/gim, '<h3>$1</h3>');
+  html = html.replace(/^####\s+(.*$)/gim, '<h4>$1</h4>');
+
+  // Bold text (two patterns)
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/__(.*?)__/g, '<strong>$1</strong>');
+
+  // Italic text (two patterns)
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  html = html.replace(/_(.*?)_/g, '<em>$1</em>');
+
+  // Links
+  html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" class="report-link">$1</a>');
+
+  // Convert list items to temporary placeholders
+  html = html.replace(/^\s*[\*\-]\s+(.*$)/gim, '<!-- UL_ITEM --><li>$1</li>');
+  html = html.replace(/^\s*(\d+)\.\s+(.*$)/gim, '<!-- OL_ITEM --><li value="$1">$2</li>');
+
+  // Handle paragraphs - replace multiple newlines with paragraph breaks
+  // This needs to be done carefully to not break list items or headers
+  html = html.split('\n').map(line => {
+      if (line.trim() === '' && !line.includes('<!-- UL_ITEM -->') && !line.includes('<!-- OL_ITEM -->') && !line.startsWith('<h')) {
+          return '<p></p>'; // Replace empty lines with paragraph breaks
       }
-    } 
-    // Check for unordered list items
-    else if (line.startsWith('<li>')) {
-      if (!inList || inOrderedList) {
-        if (inList) html += '</ol>'; // Close ordered list if we were in one
-        html += '<ul class="bullet-list">';
-        inList = true;
-        inOrderedList = false;
+      return line;
+  }).join('\n');
+
+  // Clean up consecutive paragraph breaks
+  html = html.replace(/<\/p><p><\/p><p>/g, '</p><p>');
+  html = html.replace(/<p><\/p>/g, ''); // Remove empty paragraphs
+
+  // Wrap consecutive list items in ul or ol tags
+  // This is a more robust approach than line-by-line iteration
+  html = html.replace(/(<!-- UL_ITEM --><li>.*?<\/li>)+/gs, '<ul class="bullet-list">$1</ul>');
+  html = html.replace(/(<!-- OL_ITEM --><li value=".*?">.*?<\/li>)+/gs, '<ol class="numbered-list">$1</ol>');
+
+  // Remove temporary placeholders
+  html = html.replace(/<!-- UL_ITEM -->/g, '');
+  html = html.replace(/<!-- OL_ITEM -->/g, '');
+
+  // Wrap remaining non-block content in paragraphs
+  // This is a simplified approach; a full markdown parser would be more accurate
+  // but this attempts to wrap lines that don't start with known block tags
+  const blockTags = ['<h', '<ul', '<ol', '<div', '<table', '<p>'];
+  html = html.split('\n').map(line => {
+      if (line.trim() === '') return ''; // Skip empty lines created by previous steps
+      if (blockTags.some(tag => line.trim().startsWith(tag))) {
+          return line; // Already a block element
       }
-    } 
-    // End of a list
-    else if (inList) {
-      html += inOrderedList ? '</ol>' : '</ul>';
-      inList = false;
-      inOrderedList = false;
-    }
-    
-    html += line + '\n';
-  }
-  
-  // Close any open list
-  if (inList) {
-    html += inOrderedList ? '</ol>' : '</ul>';
-  }
-  
-  // Wrap in paragraph tags if not already wrapped
-  if (!html.startsWith('<h') && !html.startsWith('<ul') && !html.startsWith('<ol') && !html.startsWith('<p>')) {
-    html = '<p>' + html + '</p>';
-  }
-  
+      return `<p>${line}</p>`; // Wrap in paragraph
+  }).join('\n');
+
+  // Clean up potential empty paragraphs around block elements
+   html = html.replace(/<p>\s*<\/p>/g, '');
+
+
   return html;
 }
 
@@ -211,16 +201,24 @@ export function generateScorecardHTMLv5(reportData: ScoreCardData): string {
   const introText = allSections.shift()?.trim() || '';
   
   // Process sections
+  const htmlFormattedTitles = [
+      'Strategic Action Plan',
+      'Illustrative Benchmarks',
+      'Assessment Responses',
+      'Your Personalized AI Learning Path',
+      'Q&A Assessment Breakdown' // Based on the Q&A section structure
+  ];
+
   const processedSections = allSections.map((section, index) => {
     const sectionTitle = section.split('\n')[0].trim();
     const sectionContent = section.substring(section.indexOf('\n')).trim();
-    
+
     // Determine background color based on section index (for alternating backgrounds)
     let bgColorClass = '';
     if (index % 3 === 0) bgColorClass = 'card-bg-mint';
     else if (index % 3 === 1) bgColorClass = 'card-bg-cream-1';
     else bgColorClass = 'card-bg-cream-2';
-    
+
     // Apply special styling for specific sections
     let specialClass = '';
     if (sectionTitle.includes('Strengths') || sectionTitle.toLowerCase().includes('strengths')) {
@@ -232,10 +230,34 @@ export function generateScorecardHTMLv5(reportData: ScoreCardData): string {
     } else if (sectionTitle.includes('Resources') || sectionTitle.includes('Getting Started')) {
       specialClass = 'resources-section';
     }
-    
+
+    // Conditionally parse markdown based on content
+    let contentHtml = sectionContent; // Default to raw content
+
+    // Check if the section content appears to be primarily markdown
+    // Look for common markdown indicators and absence of significant HTML
+    const isLikelyMarkdown =
+        (!sectionContent.includes('<div') &&
+         !sectionContent.includes('<table') &&
+         !sectionContent.includes('<ul') &&
+         !sectionContent.includes('<ol')) &&
+        (sectionContent.includes('**') || // Bold markdown
+         sectionContent.includes('*') ||  // Italic markdown
+         sectionContent.includes('- ') || // List item markdown
+         sectionContent.match(/^\d+\.\s+/) || // Numbered list item markdown
+         sectionContent.startsWith('# ')); // H1 markdown
+
+    if (isLikelyMarkdown) {
+        contentHtml = parseMarkdown(sectionContent);
+    }
+
+    // Remove the specific problematic <p>#</p> pattern if it exists
+    contentHtml = contentHtml.replace(/<p>#<\/p>/g, '');
+
+
     return {
       title: sectionTitle,
-      content: parseMarkdown(sectionContent),
+      content: contentHtml, // Use the conditionally generated HTML
       bgColorClass,
       specialClass
     };
@@ -1099,4 +1121,4 @@ export function generateScorecardHTMLv5(reportData: ScoreCardData): string {
   </div>
 </body>
 </html>`;
-} 
+}

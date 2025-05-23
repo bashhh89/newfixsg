@@ -12,7 +12,6 @@ import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { ToastProvider, useToast, Toaster } from '@/components/ui/toast-provider';
-import SimplePdfButton from '@/components/ui/pdf-download/SimplePdfButton';
 import PresentationPDFButton from '@/components/ui/pdf-download/PresentationPDFButton';
 import { toast as sonnerToast } from 'sonner';
 
@@ -28,6 +27,12 @@ import { BenchmarksSection } from '@/components/scorecard/sections/BenchmarksSec
 import { QAndASection } from '@/components/scorecard/sections/QAndASection';
 import { LearningPathSection } from '@/components/scorecard/sections/LearningPathSection';
 
+// Import lead capture component
+import LeadCaptureForm from '@/components/scorecard/LeadCaptureForm';
+
+// Add import for the WeasyPrint PDF button
+import WeasyprintPDFButton from '@/components/ui/pdf-download/WeasyprintPDFButton';
+
 // Client color palette
 const colors = {
   brightGreen: '#20E28F',
@@ -41,6 +46,14 @@ const colors = {
   cream2: '#FFFCF2',
   lightBlueShade: '#F5FDFF'
 };
+
+// Define SectionName type
+type SectionName = 'Overall Tier' | 'Key Findings' | 'Recommendations' | 'Strategic Action Plan' | 'Detailed Analysis' | 'Benchmarks' | 'Assessment Q&A' | 'Learning Path';
+
+// Define SectionRefs interface with correct syntax
+interface SectionRefs {
+  [key: string]: React.RefObject<HTMLDivElement>;
+}
 
 export default function NewResultsPage() {
   // State variables
@@ -61,12 +74,22 @@ export default function NewResultsPage() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isPresentationPdfLoading, setIsPresentationPdfLoading] = useState(false);
+  const [showLeadForm, setShowLeadForm] = useState(false);
+  const [leadCaptured, setLeadCaptured] = useState(false);
   
   // Initialize toast hook
   const { toast } = useToast();
   
   // Refs for scroll animations
   const contentRef = useRef<HTMLDivElement>(null);
+  const overallTierRef = useRef<HTMLDivElement>(null);
+  const keyFindingsRef = useRef<HTMLDivElement>(null);
+  const recommendationsRef = useRef<HTMLDivElement>(null);
+  const strategicActionPlanRef = useRef<HTMLDivElement>(null);
+  const detailedAnalysisRef = useRef<HTMLDivElement>(null);
+  const benchmarksRef = useRef<HTMLDivElement>(null);
+  const qAndARef = useRef<HTMLDivElement>(null);
+  const learningPathRef = useRef<HTMLDivElement>(null);
 
   // Important: Make this safe for SSG by checking if window is defined
   const searchParams = useSearchParams();
@@ -155,7 +178,10 @@ export default function NewResultsPage() {
         const extractedActions = extractActionsFromMarkdown(reportMarkdownValue);
         
         // Update all state at once to minimize re-renders
-        setReportMarkdown(reportMarkdownValue);
+        // Remove bold markdown (**) from the report markdown
+        const cleanedReportMarkdown = reportMarkdownValue.replace(/\*\*/g, '');
+
+        setReportMarkdown(cleanedReportMarkdown);
         setQuestionAnswerHistory(questionAnswerHistoryValue);
         setUserName(userNameValue);
         setUserTier(userTierValue);
@@ -168,7 +194,7 @@ export default function NewResultsPage() {
         if (typeof window !== 'undefined') {
           try {
             // Session storage
-            sessionStorage.setItem('reportMarkdown', reportMarkdownValue);
+            sessionStorage.setItem('reportMarkdown', cleanedReportMarkdown);
             sessionStorage.setItem('questionAnswerHistory', JSON.stringify(questionAnswerHistoryValue));
             sessionStorage.setItem('userAITier', userTierValue);
             sessionStorage.setItem('reportId', fetchedReportId);
@@ -183,6 +209,19 @@ export default function NewResultsPage() {
             // Non-critical error, don't throw
           }
         }
+        
+        // After successfully loading the report, check if lead info exists
+        if (typeof window !== 'undefined') {
+          const leadEmail = sessionStorage.getItem('scorecardLeadEmail') || localStorage.getItem('scorecardLeadEmail');
+          const leadName = sessionStorage.getItem('scorecardLeadName') || localStorage.getItem('scorecardLeadName');
+          
+          if (!leadEmail || !leadName) {
+            console.log('RESULTS PAGE: Report exists but no lead info found, showing lead form');
+            setShowLeadForm(true);
+          } else {
+            setLeadCaptured(true);
+          }
+        }
       } catch (error) {
         console.error("RESULTS PAGE ERROR:", error);
         setError(error instanceof Error ? error.message : 'Failed to load report');
@@ -193,6 +232,20 @@ export default function NewResultsPage() {
     
       fetchReportData();
   }, [searchParams]); // Only re-run if searchParams changes
+
+  // Handle lead capture success
+  const handleLeadCaptureSuccess = (capturedName: string) => {
+    console.log("Lead capture successful. Captured name:", capturedName);
+    setLeadCaptured(true);
+    setShowLeadForm(false);
+    setUserName(capturedName);
+    
+    // Store the name in sessionStorage for use in results page
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('scorecardUserName', capturedName);
+      sessionStorage.setItem('scorecardLeadName', capturedName);
+    }
+  };
 
   // Helper functions to extract data from markdown
   const extractTierFromMarkdown = (markdown: string | null): string | null => {
@@ -933,19 +986,21 @@ export default function NewResultsPage() {
 
   // Add this function before the return statement in the NewResultsPage component
   const formatReportDataForPDF = () => {
-    // Format data into the structure expected by ScorecardPDFDocument
+    // Format data into the structure expected by ScoreCardData interface
     return {
-      reportId: reportId || 'unknown',
-      reportMarkdown: reportMarkdown || '',
-      questionAnswerHistory: questionAnswerHistory || [],
-      userName: userName || 'User',
-      leadName: userName || 'User',
-      leadCompany: userIndustry || 'Company',
-      companyName: userIndustry || 'Company',
-      industry: userIndustry || 'Industry',
-      userAITier: userTier || 'Dabbler',
-      tier: userTier || 'Dabbler',
-      finalScore: 0, // Add score if available
+      UserInformation: {
+        UserName: userName || 'User',
+        CompanyName: userIndustry || 'Company',
+        Industry: userIndustry || 'Industry',
+        Email: 'user@example.com', // Add a default email or get from user data if available
+      },
+      ScoreInformation: {
+        AITier: userTier || 'Dabbler',
+        FinalScore: 0, // Add score if available
+        ReportID: reportId || 'unknown',
+      },
+      QuestionAnswerHistory: questionAnswerHistory || [],
+      FullReportMarkdown: reportMarkdown || '',
     };
   };
 
@@ -994,6 +1049,21 @@ export default function NewResultsPage() {
     );
   }
 
+  // Render the lead form if needed
+  if (showLeadForm && !leadCaptured && !isLoading && reportMarkdown) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <LeadCaptureForm
+          aiTier={userTier}
+          onSubmitSuccess={handleLeadCaptureSuccess}
+          reportMarkdown={reportMarkdown}
+          questionAnswerHistory={questionAnswerHistory}
+          industry={userIndustry || ''}
+        />
+      </div>
+    );
+  }
+
   return (
     <>
       <Toaster />
@@ -1035,6 +1105,15 @@ export default function NewResultsPage() {
                       )}
                     </button>
 
+                    <Link href={`/learning-hub${userTier ? `?tier=${userTier.toLowerCase()}` : ''}`} passHref>
+                      <button
+                        type="button"
+                        className="sg-button-primary flex items-center justify-center"
+                      >
+                        Access Learning Hub
+                      </button>
+                    </Link>
+
                     {/* PDF download button */}
                     <div id="pdf-download-container" className="flex gap-2">
                       {/* PresentationPDFButton as the only PDF download option */}
@@ -1043,6 +1122,13 @@ export default function NewResultsPage() {
                         isLoading={isPresentationPdfLoading}
                         className="btn-primary-divine bg-[#20E28F] text-[#103138] hover:bg-[#20E28F]/90"
                       />
+                      {/* WeasyPrint PDF button */}
+                      <WeasyprintPDFButton 
+                        scorecardData={formatReportDataForPDF()}
+                        className="btn-primary-divine bg-[#FEC401] text-[#103138] hover:bg-[#FEC401]/90"
+                      >
+                        WeasyPrint PDF
+                      </WeasyprintPDFButton>
                     </div>
                   </div>
                 </div>
@@ -1073,9 +1159,9 @@ export default function NewResultsPage() {
                     ></div>
                   </div>
                   <div className="tier-progress-labels">
-                    <span>Dabbler</span>
-                    <span>Enabler</span>
-                    <span>Leader</span>
+                    <div>Dabbler</div>
+                    <div>Enabler</div>
+                    <div>Leader</div>
                   </div>
                 </div>
                 
@@ -1174,304 +1260,314 @@ export default function NewResultsPage() {
 
               {/* Content Panel */}
               <div className={`content-panel ${animating ? 'fade-out' : 'fade-in'}`} ref={contentRef}>
+                {/* Overall Tier Section */}
                 {activeTab === 'Overall Tier' && (
-                  <div className="space-y-6">
-                    <h2 className="text-xl font-bold text-[#103138] mb-4 flex items-center">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3 text-[#20E28F]">
-                        <path d="M12 2L20 7V17L12 22L4 17V7L12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M12 22V12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M20 7L12 12L4 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      Overall AI Maturity Assessment
-                    </h2>
-                    
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                      <div className="px-6 pt-6">
-                        <div className="flex flex-col md:flex-row md:items-center mb-5">
-                          <div className="flex items-center mb-4 md:mb-0 md:mr-8">
-                            <div 
-                              className={`w-14 h-14 rounded-full border-4 flex items-center justify-center mr-4 ${
-                                userTier === 'Leader' ? 'border-[#20E28F] bg-[#F3FDF5]' : 
-                                userTier === 'Enabler' ? 'border-orange-500 bg-orange-50' : 
-                                'border-blue-400 bg-blue-50'
-                              }`}
-                            >
-                              <span 
-                                className={`text-lg font-bold ${
-                                  userTier === 'Leader' ? 'text-[#20E28F]' : 
-                                  userTier === 'Enabler' ? 'text-orange-500' : 
-                                  'text-blue-400'
+                  <div ref={overallTierRef} className="section-content">
+                    <div className="space-y-6">
+                      <h2 className="text-xl font-bold text-[#103138] mb-4 flex items-center">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3 text-[#20E28F]">
+                          <path d="M12 2L20 7V17L12 22L4 17V7L12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M12 22V12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M20 7L12 12L4 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        Overall AI Maturity Assessment
+                      </h2>
+                      
+                      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="px-6 pt-6">
+                          <div className="flex flex-col md:flex-row md:items-center mb-5">
+                            <div className="flex items-center mb-4 md:mb-0 md:mr-8">
+                              <div 
+                                className={`w-14 h-14 rounded-full border-4 flex items-center justify-center mr-4 ${
+                                  userTier === 'Leader' ? 'border-[#20E28F] bg-[#F3FDF5]' : 
+                                  userTier === 'Enabler' ? 'border-orange-500 bg-orange-50' : 
+                                  'border-blue-400 bg-blue-50'
                                 }`}
                               >
-                                {userTier?.[0] || '?'}
-                              </span>
+                                <span 
+                                  className={`text-lg font-bold ${
+                                    userTier === 'Leader' ? 'text-[#20E28F]' : 
+                                    userTier === 'Enabler' ? 'text-orange-500' : 
+                                    'text-blue-400'
+                                  }`}
+                                >
+                                  {userTier?.[0] || '?'}
+                                </span>
+                              </div>
+                              <div>
+                                <h3 className="text-2xl font-bold text-[#103138]">{userTier || 'Unknown'}</h3>
+                                <p className="text-[#103138]/70 text-sm">AI Maturity Tier</p>
+                              </div>
                             </div>
-                            <div>
-                              <h3 className="text-2xl font-bold text-[#103138]">{userTier || 'Unknown'}</h3>
-                              <p className="text-[#103138]/70 text-sm">AI Maturity Tier</p>
+                            
+                            <div className="w-full md:w-3/5">
+                              <div className="relative h-8 bg-gray-100 rounded-full overflow-hidden">
+                                <div 
+                                  className={`tier-progress-fill ${ 
+                                    userTier === 'Leader' ? 'w-full bg-gradient-to-r from-[#20E28F] to-[#5de4b1]' : 
+                                    userTier === 'Enabler' ? 'w-2/3 bg-gradient-to-r from-orange-400 to-orange-300' : 
+                                    userTier === 'Dabbler' ? 'w-1/3 bg-gradient-to-r from-[#01CEFE] to-[#01CEFE]/80' : 
+                                    'w-0'
+                                  }`}
+                                  // Removed the incorrect style attribute since className now handles width and color
+                                ></div>
+                              </div>
                             </div>
                           </div>
                           
-                          <div className="w-full md:w-3/5">
-                            <div className="relative h-8 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="absolute h-full flex items-center pl-2 text-xs text-white font-semibold w-full">
-                                <span className="relative z-10">Dabbler</span>
-                                <span className="relative z-10 ml-auto mr-24">Enabler</span>
-                                <span className="relative z-10 ml-auto mr-6">Leader</span>
-                              </div>
-                              <div 
-                                className={`absolute h-full transition-all duration-1000 ${
-                                  userTier === 'Leader' ? 'bg-gradient-to-r from-[#20E28F] to-[#20E28F]/80 w-full' : 
-                                  userTier === 'Enabler' ? 'bg-gradient-to-r from-[#FE7F01] to-[#FEC401] w-2/3' : 
-                                  'bg-gradient-to-r from-[#01CEFE] to-[#01CEFE]/80 w-1/3'
-                                }`}
-                              ></div>
+                          <div className="p-6 bg-[#F3FDF5]/40 rounded-lg border border-[#20E28F]/10 mb-6">
+                            <h4 className="font-semibold text-lg text-[#103138] mb-3 flex items-center">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2 text-[#20E28F]">
+                                <path d="M9 10.5L11 12.5L15.5 8M7 18V20.3355C7 20.8684 7 21.1348 7.10923 21.2716C7.20422 21.3906 7.34827 21.4599 7.50054 21.4597C7.67563 21.4595 7.88367 21.2931 8.29976 20.9602L10.6852 19.0518C11.1725 18.662 11.4162 18.4671 11.6875 18.3285C11.9282 18.2055 12.1844 18.1156 12.4492 18.0613C12.7477 18 13.0597 18 13.6837 18H16.2C17.8802 18 18.7202 18 19.362 17.673C19.9265 17.3854 20.3854 16.9265 20.673 16.362C21 15.7202 21 14.8802 21 13.2V7.8C21 6.11984 21 5.27976 20.673 4.63803C20.3854 4.07354 19.9265 3.6146 19.362 3.32698C18.7202 3 17.8802 3 16.2 3H7.8C6.11984 3 5.27976 3 4.63803 3.32698C4.07354 3.6146 3.6146 4.07354 3.32698 4.63803C3 5.27976 3 6.11984 3 7.8V14C3 14.93 3 15.395 3.10222 15.7765C3.37962 16.8117 4.18827 17.6204 5.22354 17.8978C5.60504 18 6.07003 18 7 18Z" 
+                                stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                              Your Assessment Results
+                            </h4>
+                            <p className="text-[#103138]/80 leading-relaxed">
+                              {userName ? `${userName}, your` : 'Your'} organization is at the <strong className="text-[#103138]">{userTier}</strong> tier of AI maturity.
+                              {getTierDescription(userTier)}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="p-6 border-t border-gray-100">
+                          <h4 className="font-semibold text-[#103138] mb-4">What This Means for Your Organization</h4>
+                          
+                          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                            <div className="bg-[#F3FDF5]/30 p-4 rounded-lg border border-[#20E28F]/10">
+                              <h5 className="font-medium text-[#103138] mb-2 flex items-center">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2 text-[#20E28F]">
+                                  <path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" 
+                                    stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                                Your Strengths
+                              </h5>
+                              <ul className="space-y-2">
+                                {getTierStrengths(userTier).map((strength, index) => (
+                                  <li key={index} className="flex items-start gap-2 text-sm">
+                                    <span className="text-[#20E28F] mt-1">•</span>
+                                    <span className="text-[#103138]/80">{strength}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                            
+                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                              <h5 className="font-medium text-[#103138] mb-2 flex items-center">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2 text-[#103138]">
+                                  <path d="M19.5 12c0-1.2-3.8-7.5-7.5-7.5S4.5 10.8 4.5 12c0 3.2 3.4 7.5 7.5 7.5s7.5-4.3 7.5-7.5z" 
+                                    stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                  <path d="M12 16a4 4 0 100-8 4 4 0 000 8z" 
+                                    stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                                Focus Areas
+                              </h5>
+                              <ul className="space-y-2">
+                                {getTierFocusAreas(userTier).map((area, index) => (
+                                  <li key={index} className="flex items-start gap-2 text-sm">
+                                    <span className="text-[#103138] mt-1">•</span>
+                                    <span className="text-[#103138]/80">{area}</span>
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
                           </div>
                         </div>
                         
-                        <div className="p-6 bg-[#F3FDF5]/40 rounded-lg border border-[#20E28F]/10 mb-6">
-                          <h4 className="font-semibold text-lg text-[#103138] mb-3 flex items-center">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2 text-[#20E28F]">
-                              <path d="M9 10.5L11 12.5L15.5 8M7 18V20.3355C7 20.8684 7 21.1348 7.10923 21.2716C7.20422 21.3906 7.34827 21.4599 7.50054 21.4597C7.67563 21.4595 7.88367 21.2931 8.29976 20.9602L10.6852 19.0518C11.1725 18.662 11.4162 18.4671 11.6875 18.3285C11.9282 18.2055 12.1844 18.1156 12.4492 18.0613C12.7477 18 13.0597 18 13.6837 18H16.2C17.8802 18 18.7202 18 19.362 17.673C19.9265 17.3854 20.3854 16.9265 20.673 16.362C21 15.7202 21 14.8802 21 13.2V7.8C21 6.11984 21 5.27976 20.673 4.63803C20.3854 4.07354 19.9265 3.6146 19.362 3.32698C18.7202 3 17.8802 3 16.2 3H7.8C6.11984 3 5.27976 3 4.63803 3.32698C4.07354 3.6146 3.6146 4.07354 3.32698 4.63803C3 5.27976 3 6.11984 3 7.8V14C3 14.93 3 15.395 3.10222 15.7765C3.37962 16.8117 4.18827 17.6204 5.22354 17.8978C5.60504 18 6.07003 18 7 18Z" 
-                                stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                            Your Assessment Results
-                          </h4>
-                          <p className="text-[#103138]/80 leading-relaxed">
-                            {userName ? `${userName}, your` : 'Your'} organization is at the <strong className="text-[#103138]">{userTier}</strong> tier of AI maturity.
-                            {getTierDescription(userTier)}
+                        <div className="p-6 bg-gray-50 border-t border-gray-100">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-semibold text-[#103138]">Next Steps</h4>
+                            <button onClick={() => handleTabChange('Strategic Action Plan')} className="text-sm text-[#20E28F] font-medium hover:text-[#103138] transition-colors flex items-center gap-1">
+                              View Action Plan
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </button>
+                          </div>
+                          <p className="text-sm text-[#103138]/70 mt-2">
+                            Explore your detailed results and recommendations in the sections of this report. We've created a personalized action plan to help advance your AI maturity.
                           </p>
                         </div>
-                      </div>
-                      
-                      <div className="p-6 border-t border-gray-100">
-                        <h4 className="font-semibold text-[#103138] mb-4">What This Means for Your Organization</h4>
-                        
-                        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                          <div className="bg-[#F3FDF5]/30 p-4 rounded-lg border border-[#20E28F]/10">
-                            <h5 className="font-medium text-[#103138] mb-2 flex items-center">
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2 text-[#20E28F]">
-                                <path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" 
-                                  stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                              Your Strengths
-                            </h5>
-                            <ul className="space-y-2">
-                              {getTierStrengths(userTier).map((strength, index) => (
-                                <li key={index} className="flex items-start gap-2 text-sm">
-                                  <span className="text-[#20E28F] mt-1">•</span>
-                                  <span className="text-[#103138]/80">{strength}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                          
-                          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                            <h5 className="font-medium text-[#103138] mb-2 flex items-center">
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2 text-[#103138]">
-                                <path d="M19.5 12c0-1.2-3.8-7.5-7.5-7.5S4.5 10.8 4.5 12c0 3.2 3.4 7.5 7.5 7.5s7.5-4.3 7.5-7.5z" 
-                                  stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                <path d="M12 16a4 4 0 100-8 4 4 0 000 8z" 
-                                  stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                              Focus Areas
-                            </h5>
-                            <ul className="space-y-2">
-                              {getTierFocusAreas(userTier).map((area, index) => (
-                                <li key={index} className="flex items-start gap-2 text-sm">
-                                  <span className="text-[#103138] mt-1">•</span>
-                                  <span className="text-[#103138]/80">{area}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="p-6 bg-gray-50 border-t border-gray-100">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-semibold text-[#103138]">Next Steps</h4>
-                          <button onClick={() => handleTabChange('Strategic Action Plan')} className="text-sm text-[#20E28F] font-medium hover:text-[#103138] transition-colors flex items-center gap-1">
-                            View Action Plan
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          </button>
-                        </div>
-                        <p className="text-sm text-[#103138]/70 mt-2">
-                          Explore your detailed results and recommendations in the sections of this report. We've created a personalized action plan to help advance your AI maturity.
-                        </p>
                       </div>
                     </div>
                   </div>
                 )}
-                
-                {activeTab === 'Key Findings' && (
+
+                <div ref={keyFindingsRef} className={`section-content ${activeTab !== 'Key Findings' && 'hidden'}`}>
                   <KeyFindingsSection 
                     markdownContent={reportMarkdown || ''}
                   />
-                )}
-                
+                </div>
+
                 {activeTab === 'Recommendations' && (
-                  <div className="space-y-6">
-                    <h2 className="text-xl font-bold text-[#103138] mb-4 flex items-center">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3 text-[#20E28F]">
-                        <path d="M9 6H20M9 12H20M9 18H20M5 6V6.01M5 12V12.01M5 18V18.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      Recommendations & Next Steps
-                    </h2>
-                    
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-                      <h3 className="text-lg font-semibold mb-4 text-[#103138] flex items-center">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2 text-[#20E28F]">
-                          <path d="M12 8V16M8 12H16M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z"
-                            stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <div className={`section-content ${activeTab !== 'Recommendations' && 'hidden'}`}>
+                    <div className="space-y-6">
+                      <h2 className="text-xl font-bold text-[#103138] mb-4 flex items-center">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3 text-[#20E28F]">
+                          <path d="M9 6H20M9 12H20M9 18H20M5 6V6.01M5 12V12.01M5 18V18.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
-                        Key Recommendations Based on Your Assessment
-                      </h3>
-                      <p className="text-[#103138]/80 leading-relaxed mb-4">
-                        Based on your assessment results, we've identified the following recommendations to help your organization
-                        advance its AI maturity. These action items are tailored to your specific needs and current capabilities.
-                      </p>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {actionItems && actionItems.length > 0 ? (
-                        actionItems.map((action, index) => (
-                          <div key={`action-${index}`} className="bg-white rounded-xl shadow-sm border border-gray-100 hover:border-[#20E28F]/20 transition-colors overflow-hidden group">
-                            <div className="p-1 bg-gradient-to-r from-[#20E28F]/10 to-[#F3FDF5]/50"></div>
-                            <div className="p-5">
-                              <div className="flex items-start gap-4 mb-3">
-                                <div className="w-8 h-8 rounded-lg bg-[#F3FDF5] flex items-center justify-center text-[#20E28F] flex-shrink-0">
-                                  <span className="font-bold">{index + 1}</span>
+                        Recommendations & Next Steps
+                      </h2>
+                      
+                      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+                        <h3 className="text-lg font-semibold mb-4 text-[#103138] flex items-center">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2 text-[#20E28F]">
+                            <path d="M12 8V16M8 12H16M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z"
+                              stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                          Key Recommendations Based on Your Assessment
+                        </h3>
+                        <p className="text-[#103138]/80 leading-relaxed mb-4">
+                          Based on your assessment results, we've identified the following recommendations to help your organization
+                          advance its AI maturity. These action items are tailored to your specific needs and current capabilities.
+                        </p>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {actionItems && actionItems.length > 0 ? (
+                          actionItems.map((action, index) => (
+                            <div key={`action-${index}`} className="bg-white rounded-xl shadow-sm border border-gray-100 hover:border-[#20E28F]/20 transition-colors overflow-hidden group">
+                              <div className="p-1 bg-gradient-to-r from-[#20E28F]/10 to-[#F3FDF5]/50"></div>
+                              <div className="p-5">
+                                <div className="flex items-start gap-4 mb-3">
+                                  <div className="w-8 h-8 rounded-lg bg-[#F3FDF5] flex items-center justify-center text-[#20E28F] flex-shrink-0">
+                                    <span className="font-bold">{index + 1}</span>
+                                  </div>
+                                  <h4 className="font-semibold text-[#103138] group-hover:text-[#20E28F] transition-colors leading-tight pt-1">
+                                    <ReactMarkdown rehypePlugins={[rehypeRaw as any, rehypeSanitize as any]}>
+                                      {action}
+                                    </ReactMarkdown>
+                                  </h4>
                                 </div>
-                                <h4 className="font-semibold text-[#103138] group-hover:text-[#20E28F] transition-colors leading-tight pt-1">
+                                <div className="ml-12 text-sm text-[#103138]/70">
                                   <ReactMarkdown rehypePlugins={[rehypeRaw as any, rehypeSanitize as any]}>
-                                    {action}
+                                    {getRecommendationDescription(index, action)}
                                   </ReactMarkdown>
-                                </h4>
-                              </div>
-                              <div className="ml-12 text-sm text-[#103138]/70">
-                                <ReactMarkdown rehypePlugins={[rehypeRaw as any, rehypeSanitize as any]}>
-                                  {getRecommendationDescription(index, action)}
-                                </ReactMarkdown>
+                                </div>
                               </div>
                             </div>
+                          ))
+                        ) : (
+                          <div className="col-span-2 bg-gray-50 p-8 rounded-lg text-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                            <h3 className="text-lg font-medium text-gray-500 mb-2">No Recommendations Found</h3>
+                            <p className="text-gray-400 max-w-md mx-auto">
+                              We couldn't extract specific recommendations from your assessment.
+                              Please contact support for personalized guidance.
+                            </p>
                           </div>
-                        ))
-                      ) : (
-                        <div className="col-span-2 bg-gray-50 p-8 rounded-lg text-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        )}
+                      </div>
+                      
+                      <div className="bg-[#F3FDF5]/50 rounded-xl p-5 border border-[#20E28F]/20">
+                        <h4 className="font-semibold text-[#103138] mb-3 flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#20E28F]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <h3 className="text-lg font-medium text-gray-500 mb-2">No Recommendations Found</h3>
-                          <p className="text-gray-400 max-w-md mx-auto">
-                            We couldn't extract specific recommendations from your assessment.
-                            Please contact support for personalized guidance.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="bg-[#F3FDF5]/50 rounded-xl p-5 border border-[#20E28F]/20">
-                      <h4 className="font-semibold text-[#103138] mb-3 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#20E28F]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Implementation Tips
-                      </h4>
-                      <p className="text-sm text-[#103138]/80 mb-2">
-                        For best results, prioritize these recommendations based on your organization's specific goals and constraints.
-                        Consider forming cross-functional teams to implement these changes effectively.
-                      </p>
-                      <p className="text-sm text-[#103138]/80">
-                        For a more detailed action plan, see the Strategic Action Plan section of this report.
-                      </p>
+                          Implementation Tips
+                        </h4>
+                        <p className="text-sm text-[#103138]/80 mb-2">
+                          For best results, prioritize these recommendations based on your organization's specific goals and constraints.
+                          Consider forming cross-functional teams to implement these changes effectively.
+                        </p>
+                        <p className="text-sm text-[#103138]/80">
+                          For a more detailed action plan, see the Strategic Action Plan section of this report.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
-                
+
                 {activeTab === 'Strategic Action Plan' && (
-                  <StrategicActionPlanSection
-                    reportMarkdown={reportMarkdown}
-                  />
+                  <div className={`section-content ${activeTab !== 'Strategic Action Plan' && 'hidden'}`}>
+                    <StrategicActionPlanSection
+                      reportMarkdown={reportMarkdown}
+                    />
+                  </div>
                 )}
-                
+
                 {activeTab === 'Detailed Analysis' && (
-                  <div className="space-y-6">
-                    <h2 className="text-xl font-bold text-[#103138] mb-4 flex items-center">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3 text-[#20E28F]">
-                        <path d="M10 9H6M15.5 11C13.567 11 12 9.433 12 7.5C12 5.567 13.567 4 15.5 4C17.433 4 19 5.567 19 7.5C19 9.433 17.433 11 15.5 11ZM6.5 21C4.567 21 3 19.433 3 17.5C3 15.567 4.567 14 6.5 14C8.433 14 10 15.567 10 17.5C10 19.433 8.433 21 6.5 21ZM18 16.5H14M18 19.5H14M6 6L10 6" 
-                          stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      Detailed Analysis
-                    </h2>
-                    
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-                      <h3 className="text-xl font-semibold mb-4 text-[#103138] flex items-center">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M2 5.25A2.25 2.25 0 014.25 3h15.5A2.25 2.25 0 0122 5.25v13.5A2.25 2.25 0 0119.75 21H4.25A2.25 2.25 0 012 18.75V5.25z" 
-                            stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          <path d="M9 3v18M9 15h13" 
+                  <div className={`section-content ${activeTab !== 'Detailed Analysis' && 'hidden'}`}>
+                    <div className="space-y-6">
+                      <h2 className="text-xl font-bold text-[#103138] mb-4 flex items-center">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3 text-[#20E28F]">
+                          <path d="M10 9H6M15.5 11C13.567 11 12 9.433 12 7.5C12 5.567 13.567 4 15.5 4C17.433 4 19 5.567 19 7.5C19 9.433 17.433 11 15.5 11ZM6.5 21C4.567 21 3 19.433 3 17.5C3 15.567 4.567 14 6.5 14C8.433 14 10 15.567 10 17.5C10 19.433 8.433 21 6.5 21ZM18 16.5H14M18 19.5H14M6 6L10 6" 
                             stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                         Detailed Analysis
-                      </h3>
-                      <p className="text-[#103138]/80 leading-relaxed mb-4">
-                        This analysis breaks down your assessment results across key dimensions of AI maturity.
-                        Each dimension is evaluated based on your responses and includes specific insights for improvement.
-                      </p>
+                      </h2>
                       
-                      {userTier && (
-                        <div className="mt-4 p-4 bg-[#F3FDF5] rounded-lg">
-                          <p className="font-medium flex items-center">
-                            <span className="w-3 h-3 rounded-full bg-[#20E28F] mr-2 flex-shrink-0"></span>
-                            <span className="text-[#20E28F] font-semibold mr-2">Current AI Maturity Tier:</span> 
-                            <span className="text-[#103138]">{userTier}</span>
+                      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+                        <h3 className="text-xl font-semibold mb-4 text-[#103138] flex items-center">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M2 5.25A2.25 2.25 0 014.25 3h15.5A2.25 2.25 0 0122 5.25v13.5A2.25 2.25 0 0119.75 21H4.25A2.25 2.25 0 012 18.75V5.25z" 
+                              stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M9 3v18M9 15h13" 
+                              stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                          Detailed Analysis
+                        </h3>
+                        <p className="text-[#103138]/80 leading-relaxed mb-4">
+                          This analysis breaks down your assessment results across key dimensions of AI maturity.
+                          Each dimension is evaluated based on your responses and includes specific insights for improvement.
+                        </p>
+                        
+                        {userTier && (
+                          <div className="mt-4 p-4 bg-[#F3FDF5] rounded-lg">
+                            <p className="font-medium flex items-center">
+                              <span className="w-3 h-3 rounded-full bg-[#20E28F] mr-2 flex-shrink-0"></span>
+                              <span className="text-[#20E28F] font-semibold mr-2">Current AI Maturity Tier:</span> 
+                              <span className="text-[#103138]">{userTier}</span>
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {reportMarkdown ? (
+                        <DetailedAnalysisSection reportMarkdown={reportMarkdown} tier={userTier} />
+                      ) : (
+                        <div className="bg-gray-50 p-8 rounded-lg text-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                          </svg>
+                          <h3 className="text-lg font-medium text-gray-500 mb-2">No Detailed Analysis Found</h3>
+                          <p className="text-gray-400 max-w-md mx-auto">
+                            We couldn't locate a detailed analysis section in your assessment report.
+                            Please contact support for assistance.
                           </p>
                         </div>
                       )}
                     </div>
-                    
-                    {reportMarkdown ? (
-                      <DetailedAnalysisSection reportMarkdown={reportMarkdown} tier={userTier} />
-                    ) : (
-                      <div className="bg-gray-50 p-8 rounded-lg text-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                        </svg>
-                        <h3 className="text-lg font-medium text-gray-500 mb-2">No Detailed Analysis Found</h3>
-                        <p className="text-gray-400 max-w-md mx-auto">
-                          We couldn't locate a detailed analysis section in your assessment report.
-                          Please contact support for assistance.
-                        </p>
-                      </div>
-                    )}
                   </div>
                 )}
-                
+
                 {activeTab === 'Benchmarks' && (
-                  <BenchmarksSection
-                    reportMarkdown={reportMarkdown}
-                    tier={userTier}
-                    industry={userIndustry}
-                  />
+                  <div className={`section-content ${activeTab !== 'Benchmarks' && 'hidden'}`}>
+                    <BenchmarksSection
+                      reportMarkdown={reportMarkdown}
+                      tier={userTier}
+                      industry={userIndustry}
+                    />
+                  </div>
                 )}
-                
+
                 {activeTab === 'Assessment Q&A' && (
-                  <QAndASection
-                    questionAnswerHistory={questionAnswerHistory}
-                  />
+                  <div className={`section-content ${activeTab !== 'Assessment Q&A' && 'hidden'}`}>
+                    <QAndASection
+                      questionAnswerHistory={questionAnswerHistory}
+                    />
+                  </div>
                 )}
-                
+
                 {activeTab === 'Learning Path' && (
-                  <>
+                  <div className={`section-content ${activeTab !== 'Learning Path' && 'hidden'}`}>
                     <LearningPathSection
                       reportMarkdown={reportMarkdown}
                       tier={userTier}
                     />
-                  </>
+                  </div>
                 )}
               </div>
             </main>
@@ -1634,7 +1730,7 @@ export default function NewResultsPage() {
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-bottom: 0.5rem;
+            margin-bottom: 1rem;
           }
           
           .tier-circle {
@@ -1682,6 +1778,7 @@ export default function NewResultsPage() {
             background: ${colors.white};
             border-radius: 12px;
             padding: 1.2rem;
+            padding-top: 1rem;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             border: 1px solid rgba(0, 0, 0, 0.03);
           }

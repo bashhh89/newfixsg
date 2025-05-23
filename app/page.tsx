@@ -231,8 +231,8 @@ const AssessmentQuestion: React.FC<AssessmentQuestionProps> = ({
   autoCompleteError, // Destructure autoCompleteError from props
 }) => {
   // Add notification when approaching lead form threshold
-  const LEAD_FORM_THRESHOLD = 15; // Show lead form after 15 questions (with 5 remaining)
-  const isApproachingLeadForm = scorecardState.currentQuestionNumber >= LEAD_FORM_THRESHOLD - 2 && 
+  const LEAD_FORM_THRESHOLD = 20; // Show lead form after 20 questions (with 0 remaining)
+  const isApproachingLeadForm = scorecardState.currentQuestionNumber >= LEAD_FORM_THRESHOLD - 2 &&
                                 scorecardState.currentQuestionNumber < LEAD_FORM_THRESHOLD && 
                                 !isAutoCompleting;
 
@@ -390,7 +390,7 @@ export default function Home() {
   const MAX_QUESTIONS = 20; // Match the value in the API route
   const ASSESSMENT_PHASES = ["Strategy", "Data", "Tech", "Team/Process", "Governance"]; // Match API phases
   // Define when to show the lead form - after completing this many questions
-  const LEAD_FORM_THRESHOLD = 15; // Show lead form after 15 questions (with 5 remaining)
+  const LEAD_FORM_THRESHOLD = 20; // Show lead form after 20 questions (with 0 remaining)
 
   // Define isAutoCompleting state
   const [isAutoCompleting, setIsAutoCompleting] = useState(false);
@@ -568,55 +568,6 @@ export default function Home() {
     setCurrentStep,
     scorecardState.isLoading
   ]);
-
-  // Modified lead capture success handler to store lead name and resume assessment
-  const handleLeadCaptureSuccess = useCallback((capturedName: string) => {
-    console.log("Frontend: Lead capture successful. Captured name:", capturedName);
-    setLeadCaptured(true);
-    setLeadName(capturedName);
-
-    // Store the name in sessionStorage for use in results page
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('scorecardUserName', capturedName);
-    }
-
-    // MODIFIED: Resume the assessment instead of starting over
-    setCurrentStep('assessment');
-  }, [setLeadCaptured, setLeadName]);
-
-  const handlePostAssessmentLeadCaptureSuccess = useCallback(() => {
-    console.log("Post-assessment lead capture successful. Moving to results.");
-    setCurrentStep('results');
-  }, [setCurrentStep]);
-  
-  // Extract tier from report markdown if available
-  const extractedTier = useMemo(() => {
-    if (!scorecardState.reportMarkdown) return null;
-
-    const tierMatch = scorecardState.reportMarkdown.match(/## Overall Tier:?\s*(.+?)($|\n)/i);
-    if (tierMatch && tierMatch[1]) {
-      return tierMatch[1].trim();
-    }
-
-    // Fallback to searching for Leader, Enabler, or Dabbler in the markdown   
-    const tierKeywords = ["Leader", "Enabler", "Dabbler"];
-    for (const keyword of tierKeywords) {
-      if (scorecardState.reportMarkdown.includes(keyword)) {
-        return keyword;
-      }
-    }
-
-    return null;
-  }, [scorecardState.reportMarkdown]);
-
-  // NEW: Add a failsafe effect to ensure currentStep is set to results when a report is completed
-  useEffect(() => {
-    // Synchronize current step with overall status - this is a critical backup to ensure UI flow proceeds
-    if (scorecardState.overall_status === 'completed' && scorecardState.reportMarkdown && currentStep === 'assessment') {
-      console.log('>>> FRONTEND: BACKUP STATE SYNC - Forcing currentStep to "results" because report is completed');
-      setCurrentStep('results');
-    }
-  }, [scorecardState.overall_status, scorecardState.reportMarkdown, currentStep, setCurrentStep]);
 
   // --- Stabilize generateReport (Dependency: selectedIndustry) ---
   const generateReport = useCallback(async (finalHistory: ScorecardHistoryEntry[]) => {
@@ -816,6 +767,66 @@ export default function Home() {
     console.log(`FRONTEND: generateReport function ended at: ${new Date().toISOString()}. Total duration: ${(Date.now() - startTime) / 1000}s`);
   }, [selectedIndustry, leadName, MAX_QUESTIONS]);
 
+  // Modified lead capture success handler - MOVED AFTER generateReport is defined
+  const handleLeadCaptureSuccess = useCallback((capturedName: string) => {
+    console.log("Frontend: Lead capture successful. Captured name:", capturedName);
+    setLeadCaptured(true);
+    setLeadName(capturedName);
+
+    // Store the name in sessionStorage for use in results page
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('scorecardUserName', capturedName);
+    }
+
+    // MODIFIED: Instead of continuing with more questions, generate the report immediately
+    console.log("Frontend: Lead capture successful. Generating report immediately.");
+    
+    // Set loading state for report generation
+    setIsGeneratingFinalReport(true);
+    
+    // Use the current history to generate the report
+    const currentHistory = scorecardState.history;
+    
+    // Generate the report with exactly MAX_QUESTIONS answers or current answers if fewer
+    generateReport(currentHistory.slice(0, MAX_QUESTIONS));
+    
+    // The generateReport function now handles navigation directly
+  }, [setLeadCaptured, setLeadName, scorecardState.history, MAX_QUESTIONS, setIsGeneratingFinalReport, generateReport]);
+
+  const handlePostAssessmentLeadCaptureSuccess = useCallback(() => {
+    console.log("Post-assessment lead capture successful. Moving to results.");
+    setCurrentStep('results');
+  }, [setCurrentStep]);
+  
+  // Extract tier from report markdown if available
+  const extractedTier = useMemo(() => {
+    if (!scorecardState.reportMarkdown) return null;
+
+    const tierMatch = scorecardState.reportMarkdown.match(/## Overall Tier:?\s*(.+?)($|\n)/i);
+    if (tierMatch && tierMatch[1]) {
+      return tierMatch[1].trim();
+    }
+
+    // Fallback to searching for Leader, Enabler, or Dabbler in the markdown   
+    const tierKeywords = ["Leader", "Enabler", "Dabbler"];
+    for (const keyword of tierKeywords) {
+      if (scorecardState.reportMarkdown.includes(keyword)) {
+        return keyword;
+      }
+    }
+
+    return null;
+  }, [scorecardState.reportMarkdown]);
+
+  // NEW: Add a failsafe effect to ensure currentStep is set to results when a report is completed
+  useEffect(() => {
+    // Synchronize current step with overall status - this is a critical backup to ensure UI flow proceeds
+    if (scorecardState.overall_status === 'completed' && scorecardState.reportMarkdown && currentStep === 'assessment') {
+      console.log('>>> FRONTEND: BACKUP STATE SYNC - Forcing currentStep to "results" because report is completed');
+      setCurrentStep('results');
+    }
+  }, [scorecardState.overall_status, scorecardState.reportMarkdown, currentStep, setCurrentStep]);
+
   // --- Stabilize handleAnswerSubmit using Functional Updates ---
   const handleAnswerSubmit = useCallback(async (answer: any, answerSource?: AnswerSourceType) => {
     let submittedQuestion = '';
@@ -860,7 +871,8 @@ export default function Home() {
       console.log(`>>> FRONTEND: Question ${newHistoryLength}/${MAX_QUESTIONS} completed. Auto-completing: ${isAutoCompleting}`);
 
       // MODIFIED: Check if we need to show lead capture form
-      if (!leadCaptured && newHistoryLength >= LEAD_FORM_THRESHOLD) {
+      // Show lead form exactly after 20 questions are answered
+      if (!leadCaptured && newHistoryLength === LEAD_FORM_THRESHOLD) {
         console.log(`>>> FRONTEND: Reached lead form threshold (${LEAD_FORM_THRESHOLD}). Showing lead capture form.`);
         
         // Stop auto-complete if it's running
@@ -872,6 +884,8 @@ export default function Home() {
         setScorecardState(prev => ({
           ...prev,
           isLoading: false,
+          overall_status: 'lead-capture-required', // Add status to indicate lead capture is required
+          currentQuestionNumber: MAX_QUESTIONS // Set to max questions to prevent showing more
         }));
         
         // Show lead capture form
@@ -1125,7 +1139,7 @@ export default function Home() {
       return (
         <LeadCaptureForm
           aiTier={null} // Pass null for now, tier is determined after assessment
-          onSubmitSuccess={handleLeadCaptureSuccess} // This will now resume the assessment
+          onSubmitSuccess={handleLeadCaptureSuccess} // This will now generate report and navigate
           reportMarkdown={null} // Not available at this stage
           questionAnswerHistory={scorecardState.history} // Pass history for context
           industry={selectedIndustry} // Pass the selected industry to the form
@@ -1133,8 +1147,11 @@ export default function Home() {
       );
     }
 
-    // Assessment Questions
-    if (currentStep === 'assessment') {
+    // Assessment Questions - Only show if not reached max questions and lead form not required
+    if (currentStep === 'assessment' && 
+        scorecardState.currentQuestionNumber <= MAX_QUESTIONS && 
+        scorecardState.overall_status !== 'lead-capture-required' &&
+        scorecardState.overall_status !== 'completed') {
       return (
         <AssessmentQuestion
           scorecardState={scorecardState}
@@ -1154,7 +1171,7 @@ export default function Home() {
     }
 
     // Results (fallback if not already redirected)
-    if (currentStep === 'results') {
+    if (currentStep === 'results' || scorecardState.overall_status === 'completed') {
       return <ReportLoadingIndicator isLoading={true} />;
     }
 

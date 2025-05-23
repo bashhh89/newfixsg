@@ -146,7 +146,7 @@ const ScorecardQuestionDisplay: React.FC<ScorecardQuestionDisplayProps> = ({
         );
       case 'radio':
         return (
-          <div className="grid grid-cols-1 gap-3 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
             {options?.map((option) => {
               const selected = currentAnswer === option;
               return (
@@ -168,7 +168,7 @@ const ScorecardQuestionDisplay: React.FC<ScorecardQuestionDisplayProps> = ({
         );
       case 'checkbox':
         return (
-          <div className="grid grid-cols-1 gap-3 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
             {options?.map((option) => {
               const checked = (currentAnswer as string[]).includes(option);
               return (
@@ -215,7 +215,7 @@ const ScorecardQuestionDisplay: React.FC<ScorecardQuestionDisplayProps> = ({
                     onClick={() => setCurrentAnswer(option)}
                     disabled={isLoading}
                     className={`
-                      relative flex-1 h-14 rounded-lg transition-all duration-200 font-semibold text-lg
+                      relative flex-1 h-12 rounded-lg transition-all duration-200 font-medium text-sm
                       ${selected 
                         ? 'bg-sg-bright-green text-white shadow-md transform -translate-y-1' 
                         : 'bg-white border border-gray-200 text-sg-dark-teal hover:bg-sg-light-mint hover:border-sg-bright-green/50'}
@@ -223,8 +223,8 @@ const ScorecardQuestionDisplay: React.FC<ScorecardQuestionDisplayProps> = ({
                   >
                     {option}
                     {selected && (
-                      <div className="absolute -bottom-5 left-1/2 transform -translate-x-1/2 text-sm font-normal">
-                        <svg className="w-5 h-5 text-sg-bright-green mx-auto" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                      <div className="absolute -bottom-5 left-1/2 transform -translate-x-1/2 text-xs font-normal">
+                        <svg className="w-4 h-4 text-sg-bright-green mx-auto" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                           <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
                         </svg>
                       </div>
@@ -536,7 +536,7 @@ Provide a realistic answer for a ${testPersonaTier} tier organization in the ${i
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                Finish with AI
+                Auto-Complete
               </button>
             </div>
           )}
@@ -572,7 +572,7 @@ Provide a realistic answer for a ${testPersonaTier} tier organization in the ${i
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
               </div>
-              {/* <h4 className="text-base font-medium text-sg-dark-teal">AI Analysis</h4> */}
+              <h4 className="text-base font-medium text-sg-dark-teal">AI Analysis</h4>
             </div>
             <div className="text-sm text-sg-dark-teal/80 prose prose-sm max-w-none whitespace-pre-wrap max-h-[300px] overflow-y-auto pr-2">
               {displayedText}

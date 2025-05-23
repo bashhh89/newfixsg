@@ -13,6 +13,8 @@ interface PDFOptions {
   printBackground?: boolean;
   format?: string;
   landscape?: boolean;
+  pageSize?: string;
+  preferCssPageSize?: boolean;
 }
 
 /**
@@ -22,7 +24,9 @@ export async function convertHTMLToPDF(html: string, options: PDFOptions = {}): 
   try {
     // WeasyPrint service configuration
     const WEASYPRINT_SERVICE_URL = process.env.WEASYPRINT_SERVICE_URL || "http://localhost:5001/generate-pdf";
-    const WEASYPRINT_TIMEOUT = 120000; // 120 seconds timeout (increased from 60 seconds)
+    const WEASYPRINT_TIMEOUT = 180000; // 180 seconds timeout (3 minutes)
+    
+    console.log("Configuring PDF options for WeasyPrint...");
     
     const defaultOptions = {
       margin: {
@@ -32,7 +36,9 @@ export async function convertHTMLToPDF(html: string, options: PDFOptions = {}): 
         left: "15mm"
       },
       format: "A4",
-      landscape: false
+      landscape: false,
+      preferCssPageSize: true,  // Prefer CSS page size from @page rules
+      printBackground: true     // Always print background graphics
     };
     
     // Merge default options with provided options
@@ -47,43 +53,61 @@ export async function convertHTMLToPDF(html: string, options: PDFOptions = {}): 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), WEASYPRINT_TIMEOUT);
     
-    // Make request to WeasyPrint service
-    const weasyPrintResponse = await fetch(WEASYPRINT_SERVICE_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        html_content: html,
-        pdf_options: pdfOptions
-      }),
-      signal: controller.signal
-    });
-    
-    // Clear timeout
-    clearTimeout(timeoutId);
-    
-    if (!weasyPrintResponse.ok) {
-      let errorDetails = "";
-      try {
-        const errorData = await weasyPrintResponse.json();
-        errorDetails = JSON.stringify(errorData);
-      } catch {
-        errorDetails = await weasyPrintResponse.text();
+    try {
+      // Make request to WeasyPrint service
+      const weasyPrintResponse = await fetch(WEASYPRINT_SERVICE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/pdf"
+        },
+        body: JSON.stringify({
+          html_content: html,
+          pdf_options: pdfOptions
+        }),
+        signal: controller.signal
+      });
+      
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
+      if (!weasyPrintResponse.ok) {
+        let errorDetails = "";
+        try {
+          const errorData = await weasyPrintResponse.json();
+          errorDetails = JSON.stringify(errorData);
+        } catch {
+          errorDetails = await weasyPrintResponse.text();
+        }
+        
+        console.error(`WeasyPrint service error (${weasyPrintResponse.status}): ${errorDetails}`);
+        throw new Error(`WeasyPrint service error: ${weasyPrintResponse.status} - ${errorDetails.substring(0, 300)}`);
       }
       
-      console.error(`WeasyPrint service error: ${weasyPrintResponse.status} - ${errorDetails}`);
-      throw new Error(`WeasyPrint service error: ${weasyPrintResponse.status}`);
+      // Check if the response is actually a PDF
+      const contentType = weasyPrintResponse.headers.get('Content-Type');
+      if (!contentType || !contentType.includes('application/pdf')) {
+        console.error(`WeasyPrint returned wrong content type: ${contentType}`);
+        throw new Error(`WeasyPrint service error: Expected PDF but got ${contentType}`);
+      }
+      
+      // Get PDF as buffer
+      const pdfBuffer = await weasyPrintResponse.arrayBuffer();
+      if (!pdfBuffer || pdfBuffer.byteLength === 0) {
+        throw new Error("WeasyPrint service returned empty PDF");
+      }
+      
+      console.log(`PDF generated successfully: ${pdfBuffer.byteLength} bytes`);
+      return Buffer.from(pdfBuffer);
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      throw fetchError;
     }
-    
-    // Get PDF as buffer
-    const pdfBuffer = await weasyPrintResponse.arrayBuffer();
-    return Buffer.from(pdfBuffer);
   } catch (error) {
     console.error("Error converting HTML to PDF:", error);
     
     if (error instanceof Error && error.name === "AbortError") {
-      throw new Error("WeasyPrint service request timed out");
+      throw new Error("WeasyPrint service request timed out after 3 minutes");
     }
     
     throw error;

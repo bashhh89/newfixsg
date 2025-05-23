@@ -198,7 +198,21 @@ export async function POST(request: Request) {
               pdf_options: {
                 presentational_hints: true,
                 optimize_size: ['images', 'fonts'],
-                compress: true
+                compress: true,
+                pdf_format: {
+                  page_size: 'A4',
+                  margin: {
+                    top: '20mm',
+                    right: '15mm',
+                    bottom: '20mm',
+                    left: '15mm'
+                  }
+                },
+                stylesheets: [],
+                font_config: {
+                  font_family: 'Plus Jakarta Sans',
+                  font_path: './fonts'
+                }
               }
             }),
             signal: controller.signal
@@ -218,7 +232,7 @@ export async function POST(request: Request) {
             console.log(`Waiting before retry attempt ${retryCount + 1}...`);
             await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retrying
           }
-        } catch (retryError) {
+        } catch (retryError: any) {
           // If it's a timeout, don't retry
           if (retryError instanceof Error && retryError.name === 'AbortError') {
             console.error('WeasyPrint service request timed out');
@@ -338,40 +352,66 @@ function simpleMarkdownToHTML(markdown: string, isListItemContent: boolean = fal
 function extractStrengthsHTML(markdown: string): string {
   console.log('Extracting strengths from markdown...');
   
-  // More specific pattern to match strengths section
-  const strengthsSectionMatch = markdown.match(/\*\*Strengths:\*\*\s*([\s\S]*?)(?=\n\n\*\*Weaknesses:\*\*|\n##|\n###|$)/i);
-  
-  if (!strengthsSectionMatch || !strengthsSectionMatch[1]) {
-    console.log('No strengths section found in markdown');
-    return '<p>Strengths section not found in the report.</p>';
+  // Try multiple patterns to find strengths section
+  const patterns = [
+    /\*\*Strengths:\*\*\s*([\s\S]*?)(?=\n\n\*\*Weaknesses:\*\*|\n##|\n###|$)/i,
+    /###\s*Strengths[:\s]*([\s\S]*?)(?=###\s*(?:Weaknesses|Areas for Improvement)|\n##|\n###|$)/i,
+    /## Key Findings\s*[\s\S]*?\*\*Strengths:\*\*([\s\S]*?)(?=\*\*Weaknesses|\*\*Areas for Improvement|\n##|\n###|$)/i
+  ];
+
+  let strengthsText = '';
+  for (const pattern of patterns) {
+    const match = markdown.match(pattern);
+    if (match && match[1]) {
+      strengthsText = match[1].trim();
+      console.log('Found strengths text using pattern:', pattern);
+      break;
+    }
   }
 
-  const strengthsText = strengthsSectionMatch[1].trim();
+  if (!strengthsText) {
+    console.log('No strengths section found in markdown');
+    return '<p>No strengths could be found in the report.</p>';
+  }
+
   console.log('Found strengths text:', strengthsText);
 
-  // Split into individual strength items
-  const strengthItems = strengthsText.split(/\n(?=\d+\.\s+)/);
+  // Split into individual strength items, supporting both numbered and bulleted items
+  const strengthItems = strengthsText
+    .split(/\n(?=(?:\d+\.\s+|\*\s+|\-\s+))/);
   console.log(`Found ${strengthItems.length} strength items`);
 
   const processedItems = strengthItems.map(item => {
-    // Try to match items with titles
-    const itemMatch = item.match(/^\d+\.\s+\*\*(.*?):\*\*\s*-\s*([\s\S]*)/s);
-    if (itemMatch) {
-      const title = itemMatch[1].trim();
-      const description = itemMatch[2].trim();
-      console.log(`Processing strength with title: ${title}`);
-      return `
-        <div class="strength-item no-break">
-          <h5>${simpleMarkdownToHTML(title, true)}</h5>
-          <p>${simpleMarkdownToHTML(description, true)}</p>
-        </div>`;
-    }
+    // Try to match numbered items with titles    // Try to match numbered items with titles and descriptions
+    const titleMatch = item.match(/^\d+\.\\s+(?:\\*\\*([^:]+):\\*\\*\\s*(?:-\\s*|\\n\\s*)([\\s\\S]*)|\\*\\*([^*]+)\\*\\*\\s*(?:-\\s*|\\n\\s*)([\\s\\S]*)|([\s\S]*))/s);
+    
+    if (titleMatch) {
+      // Extract content based on which match group succeeded
+      const title = titleMatch[1] || titleMatch[3] || '';
+      let content = titleMatch[2] || titleMatch[4] || titleMatch[5] || '';
+      content = content.trim();
 
-    // Try to match simple numbered items
-    const numberedItemMatch = item.match(/^\d+\.\s+([\s\S]*)/s);
-    if (numberedItemMatch) {
-      const content = numberedItemMatch[1].trim();
-      console.log('Processing simple numbered strength item');
+      if (title) {
+        console.log(`Processing strength with title: ${title}`);
+        return `
+          <div class="strength-item no-break">
+            <h5>${simpleMarkdownToHTML(title, true)}</h5>
+            <p>${simpleMarkdownToHTML(content, true)}</p>
+          </div>`;
+      } else if (content) {
+        console.log('Processing simple strength item');
+        return `
+          <div class="strength-item no-break">
+            <p>${simpleMarkdownToHTML(content, true)}</p>
+          </div>`;
+      }
+    }
+    
+    // Try to match bulleted items
+    const bulletMatch = item.match(/^[*-]\s+([\s\S]*)/s);
+    if (bulletMatch) {
+      const content = bulletMatch[1].trim();
+      console.log('Processing bulleted strength item');
       return `
         <div class="strength-item no-break">
           <p>${simpleMarkdownToHTML(content, true)}</p>
@@ -393,40 +433,66 @@ function extractStrengthsHTML(markdown: string): string {
 function extractChallengesHTML(markdown: string): string {
   console.log('Extracting challenges/weaknesses from markdown...');
   
-  // More specific pattern to match weaknesses section
-  const challengesSectionMatch = markdown.match(/\*\*Weaknesses:\*\*\s*([\s\S]*?)(?=\n\n\d+\.\s|\n##|\n###|$)/i);
-  
-  if (!challengesSectionMatch || !challengesSectionMatch[1]) {
-    console.log('No challenges/weaknesses section found in markdown');
-    return '<p>Challenges section not found in the report.</p>';
+  // Try multiple patterns to find weaknesses/challenges section
+  const patterns = [
+    /\*\*Weaknesses:\*\*\s*([\s\S]*?)(?=\n\n\d+\.\s|\n##|\n###|$)/i,
+    /###\s*(?:Weaknesses|Areas for Improvement|Challenges)[:\s]*([\s\S]*?)(?=\n##|\n###|$)/i,
+    /## Key Findings\s*[\s\S]*?\*\*(?:Weaknesses|Areas for Improvement|Challenges):\*\*([\s\S]*?)(?=\n##|\n###|$)/i,
+    /(?:Weaknesses|Areas for Improvement|Challenges)[:\s]*\n([\s\S]*?)(?=\n##|\n###|$)/i
+  ];
+
+  let challengesText = '';
+  for (const pattern of patterns) {
+    const match = markdown.match(pattern);
+    if (match && match[1]) {
+      challengesText = match[1].trim();
+      console.log('Found challenges text using pattern:', pattern);
+      break;
+    }
   }
 
-  const challengesText = challengesSectionMatch[1].trim();
+  if (!challengesText) {
+    console.log('No challenges/weaknesses section found in markdown');
+    return '<p>No challenges or areas for improvement could be found in the report.</p>';
+  }
+
   console.log('Found challenges text:', challengesText);
 
-  // Split into individual challenge items
-  const challengeItems = challengesText.split(/\n(?=\d+\.\s+)/);
+  // Split into individual challenge items, supporting both numbered and bulleted items
+  const challengeItems = challengesText
+    .split(/\n(?=(?:\d+\.\s+|\*\s+|\-\s+))/);
   console.log(`Found ${challengeItems.length} challenge items`);
 
-  const processedItems = challengeItems.map(item => {
-    // Try to match items with titles
-    const itemMatch = item.match(/^\d+\.\s+\*\*(.*?):\*\*\s*-\s*([\s\S]*)/s);
-    if (itemMatch) {
-      const title = itemMatch[1].trim();
-      const description = itemMatch[2].trim();
-      console.log(`Processing challenge with title: ${title}`);
-      return `
-        <div class="weakness-item no-break">
-          <h5>${simpleMarkdownToHTML(title, true)}</h5>
-          <p>${simpleMarkdownToHTML(description, true)}</p>
-        </div>`;
-    }
+  const processedItems = challengeItems.map(item => {    // Try to match numbered items with titles and descriptions
+    const titleMatch = item.match(/^\d+\.\\s+(?:\\*\\*([^:]+):\\*\\*\\s*(?:-\\s*|\\n\\s*)([\\s\\S]*)|\\*\\*([^*]+)\\*\\*\\s*(?:-\\s*|\\n\\s*)([\\s\\S]*)|([\s\S]*))/s);
+    
+    if (titleMatch) {
+      // Extract content based on which match group succeeded
+      const title = titleMatch[1] || titleMatch[3] || '';
+      let content = titleMatch[2] || titleMatch[4] || titleMatch[5] || '';
+      content = content.trim();
 
-    // Try to match simple numbered items
-    const numberedItemMatch = item.match(/^\d+\.\s+([\s\S]*)/s);
-    if (numberedItemMatch) {
-      const content = numberedItemMatch[1].trim();
-      console.log('Processing simple numbered challenge item');
+      if (title) {
+        console.log(`Processing challenge with title: ${title}`);
+        return `
+          <div class="weakness-item no-break">
+            <h5>${simpleMarkdownToHTML(title, true)}</h5>
+            <p>${simpleMarkdownToHTML(content, true)}</p>
+          </div>`;
+      } else if (content) {
+        console.log('Processing simple challenge item');
+        return `
+          <div class="weakness-item no-break">
+            <p>${simpleMarkdownToHTML(content, true)}</p>
+          </div>`;
+      }
+    }
+    
+    // Try to match bulleted items
+    const bulletMatch = item.match(/^[*-]\s+([\s\S]*)/s);
+    if (bulletMatch) {
+      const content = bulletMatch[1].trim();
+      console.log('Processing bulleted challenge item');
       return `
         <div class="weakness-item no-break">
           <p>${simpleMarkdownToHTML(content, true)}</p>
@@ -452,10 +518,10 @@ function extractActionPlanHTML(markdown: string): string {
   
   // First try to find a dedicated action plan section
   const sectionPatterns = [
-    /## Strategic Action Plan\s*([\s\S]*?)(?=\n##|$)/i,
-    /## Action Plan\s*([\s\S]*?)(?=\n##|$)/i,
-    /## Strategic Recommendations\s*([\s\S]*?)(?=\n##|$)/i,
-    /## Recommendations\s*([\s\S]*?)(?=\n##|$)/i
+    /## Strategic Action Plan\\s*([\\s\\S]*?)(?=\\n##|$)/i,
+    /## Action Plan\\s*([\\s\\S]*?)(?=\\n##|$)/i,
+    /## Strategic Recommendations\\s*([\\s\\S]*?)(?=\\n##|$)/i,
+    /## Recommendations\\s*([\\s\\S]*?)(?=\\n##|$)/i
   ];
 
   let actionPlanContent = '';
@@ -636,10 +702,10 @@ function extractLearningPathHTML(markdown: string): string {
 
   // Try multiple section header patterns
   const sectionPatterns = [
-    /### Your Learning Path & Resources\s*([\s\S]*?)(?=\n##|$)/i,
-    /### Recommended Learning Path\s*([\s\S]*?)(?=\n##|$)/i,
-    /### Learning Path Recommendations\s*([\s\S]*?)(?=\n##|$)/i,
-    /### Your Personalized AI Learning Path\s*([\s\S]*?)(?=\n##|$)/i
+    /### Your Learning Path & Resources\\s*([\\s\\S]*?)(?=\\n##|$)/i,
+    /### Recommended Learning Path\\s*([\\s\\S]*?)(?=\\n##|$)/i,
+    /### Learning Path Recommendations\\s*([\\s\\S]*?)(?=\\n##|$)/i,
+    /### Your Personalized AI Learning Path\\s*([\\s\\S]*?)(?=\\n##|$)/i
   ];
 
   let learningPathText = '';
@@ -755,7 +821,7 @@ function extractDetailedAnalysisHTML(markdown: string): string {
   console.log('Extracting detailed analysis from report...');
 
   // First try to find a dedicated detailed analysis section
-  const detailedAnalysisMatch = markdown.match(/## Detailed Analysis\s*([\s\S]*?)(?=\n##|$)/i);
+  const detailedAnalysisMatch = markdown.match(/## Detailed Analysis\\s*([\\s\\S]*?)(?=\\n##|$)/i);
   
   if (detailedAnalysisMatch && detailedAnalysisMatch[1]) {
     console.log('Found dedicated detailed analysis section');
@@ -774,7 +840,7 @@ function extractDetailedAnalysisHTML(markdown: string): string {
       }
 
       // Extract dimension title
-      const dimensionTitleMatch = dimensionBlockText.match(/^([^\n]+)/);
+      const dimensionTitleMatch = dimensionBlockText.match(/^([^\\n]+)/);
       if (!dimensionTitleMatch) {
         console.log(`No title found for dimension block ${i}`);
         continue;
@@ -896,7 +962,7 @@ function extractDetailedAnalysisHTML(markdown: string): string {
 
           // Check for sub-steps
           const subSteps = [];
-          const subStepRegex = /(?:-|\*)\s*\*\*(Sub-step \d+):\*\*\s*([\s\S]*?)(?=\n(?:-|\*)\s*\*\*Sub-step \d+:|$)/gi;
+          const subStepRegex = /(?:-|\\*)\\s*\\*\\*(Sub-step \\d+):\\*\\*\\s*([\\s\\S]*?)(?=\\n(?:-|\\*)\\s*\\*\\*Sub-step \\d+:|$)/gi;
           let subStepMatch;
           let lastIndex = 0;
 
@@ -921,7 +987,7 @@ function extractDetailedAnalysisHTML(markdown: string): string {
             }
           } else {
             // No sub-steps found, check for regular bullet points
-            const bulletPoints = item.content.match(/(?:^|\n)(?:\s*[-*]\s+)([^\n]+)/g);
+            const bulletPoints = item.content.match(/(?:^|\\n)(?:\\s*[-*]\\s+)([\\s\\S]*?)(?=\\n(?:\\s*[-*]\\s+)|$)/g);
             if (bulletPoints) {
               recommendationHtml += '<ul class="compact-list">';
               bulletPoints.forEach(bullet => {
@@ -968,7 +1034,7 @@ function extractDetailedAnalysisHTML(markdown: string): string {
           </div>`;
       
       // Try to include tier descriptions if available
-      const tierDescriptionMatch = markdown.match(/### (Dabbler|Enabler|Leader) Tier Organizations[^\n]*\n([\s\S]*?)(?=###|\n## |$)/i);
+      const tierDescriptionMatch = markdown.match(/### (Dabbler|Enabler|Leader) Tier Organizations[^\\n]*\\n([\\s\\S]*?)(?=###|\\n## |$)/i);
       if (tierDescriptionMatch && tierDescriptionMatch[2]) {
         const tierDescription = tierDescriptionMatch[2].trim();
         htmlOutput += `

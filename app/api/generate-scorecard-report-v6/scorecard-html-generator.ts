@@ -306,59 +306,97 @@ function extractSections(markdownContent: string): Record<string, string> {
     console.log('EXTRACT_SECTIONS: Found Overall Tier section of length:', overallTierMatch[1].length);
     sections.overallTier = parseMarkdown(overallTierMatch[1].trim());
   }
-  
-  // Extract key findings section
-  const keyFindingsMatch = markdownContent.match(/## Key Findings(?:[^\n]*)?\n?([\s\S]*?)(?=\n##|$)/i);
-  if (keyFindingsMatch) {
-    console.log('EXTRACT_SECTIONS: Found Key Findings section of length:', keyFindingsMatch[1].length);
-    // We don't actually use the full key findings section directly
-    // Instead, we extract strengths and weaknesses separately below
+    // Extract key findings section with multiple pattern attempts
+  const keyFindingsPatterns = [
+    // Standard format
+    /## Key Findings(?:[^\n]*)?\n?([\s\S]*?)(?=\n##|$)/i,
+    // Flexible whitespace
+    /## Key\s+Findings(?:[^\n]*)?\n?([\s\S]*?)(?=\n##|$)/i,
+    // No space after ##
+    /##Key Findings(?:[^\n]*)?\n?([\s\S]*?)(?=\n##|$)/i,
+    // Alternate formats
+    /## Key Analysis(?:[^\n]*)?\n?([\s\S]*?)(?=\n##|$)/i,
+    /## Summary Findings(?:[^\n]*)?\n?([\s\S]*?)(?=\n##|$)/i
+  ];
+
+  let keyFindingsContent = null;
+  let keyFindingsMatch = null;
+  for (const pattern of keyFindingsPatterns) {
+    keyFindingsMatch = markdownContent.match(pattern);
+    if (keyFindingsMatch) {
+      keyFindingsContent = keyFindingsMatch[1].trim();
+      console.log('EXTRACT_SECTIONS: Found Key Findings section of length:', keyFindingsContent.length);
+      // Store the full key findings section for reference
+      sections.keyFindings = parseMarkdown(keyFindingsContent);
+      break;
+    }
   }
-  
-  // Extract strengths subsection
-  const strengthsMatch = markdownContent.match(/\*\*Strengths:\*\*\n?([\s\S]*?)(?=\*\*Weaknesses:|## Strategic|## Action|##)/i);
-  if (strengthsMatch) {
-    console.log('EXTRACT_SECTIONS: Found Strengths section of length:', strengthsMatch[1].length);
-    sections.strengths = parseMarkdown(strengthsMatch[1].trim());
-  } else {
-    console.warn('EXTRACT_SECTIONS: Could not find Strengths section');
-    
-    // Try alternate format with ### heading
-    const altStrengthsMatch = markdownContent.match(/### Strengths\n?([\s\S]*?)(?=### Weaknesses|### Challenges|## Strategic|## Action|##)/i);
-    if (altStrengthsMatch) {
-      console.log('EXTRACT_SECTIONS: Found Strengths section (alt format) of length:', altStrengthsMatch[1].length);
-      sections.strengths = parseMarkdown(altStrengthsMatch[1].trim());
-    } else {
-      // Last effort - try with just the word "Strengths" at the beginning of a line
-      const lastResortMatch = markdownContent.match(/\nStrengths[:\s]*\n([\s\S]*?)(?=\nWeaknesses|\nChallenges|## Strategic|## Action|##)/i);
-      if (lastResortMatch) {
-        console.log('EXTRACT_SECTIONS: Found Strengths section (last resort) of length:', lastResortMatch[1].length);
-        sections.strengths = parseMarkdown(lastResortMatch[1].trim());
+
+  // If no Key Findings section was found, warn about it
+  if (!keyFindingsContent) {
+    console.warn('EXTRACT_SECTIONS: Could not find Key Findings section with any pattern');
+  }
+
+  // Extract strengths and weaknesses with multiple patterns
+  const sectionPatterns = {
+    strengths: [
+      // Bold format
+      /\*\*Strengths:\*\*\n?([\s\S]*?)(?=\*\*(?:Weaknesses|Challenges):|## Strategic|## Action|##)/i,
+      // Header format
+      /### Strengths\n?([\s\S]*?)(?=### (?:Weaknesses|Challenges)|## Strategic|## Action|##)/i,
+      // Simple text format
+      /\nStrengths:\n([\s\S]*?)(?=\n(?:Weaknesses|Challenges):|## Strategic|## Action|##)/i,
+      // Alternative bold format
+      /__Strengths:__\n?([\s\S]*?)(?=__(?:Weaknesses|Challenges):__|## Strategic|## Action|##)/i,
+      // Fallback - any content between Strengths and next section
+      /\bStrengths[:\s]*\n([\s\S]*?)(?=\s*(?:Weaknesses|Challenges|Strategic|Action)\b|##)/i
+    ],
+    weaknesses: [
+      // Bold format
+      /\*\*(?:Weaknesses|Challenges):\*\*\n?([\s\S]*?)(?=## Strategic|## Action|##)/i,
+      // Header format
+      /### (?:Weaknesses|Challenges)\n?([\s\S]*?)(?=## Strategic|## Action|##)/i,
+      // Simple text format
+      /\n(?:Weaknesses|Challenges):\n([\s\S]*?)(?=## Strategic|## Action|##)/i,
+      // Alternative bold format
+      /__(?:Weaknesses|Challenges):__\n?([\s\S]*?)(?=## Strategic|## Action|##)/i,
+      // Fallback format
+      /\b(?:Weaknesses|Challenges)[:\s]*\n([\s\S]*?)(?=## Strategic|## Action|##)/i
+    ]
+  };
+
+  // Extract strengths
+  for (const pattern of sectionPatterns.strengths) {
+    const strengthsMatch = markdownContent.match(pattern);
+    if (strengthsMatch) {
+      const content = strengthsMatch[1].trim();
+      if (content) {
+        sections.strengths = parseMarkdown(content);
+        console.log('EXTRACT_SECTIONS: Found Strengths section of length:', content.length);
+        break;
       }
     }
   }
-  
-  // Extract weaknesses subsection (also try "Challenges" as an alternative label)
-  const weaknessesMatch = markdownContent.match(/\*\*(?:Weaknesses|Challenges):\*\*\n?([\s\S]*?)(?=## Strategic|## Action|##)/i);
-  if (weaknessesMatch) {
-    console.log('EXTRACT_SECTIONS: Found Weaknesses section of length:', weaknessesMatch[1].length);
-    sections.weaknesses = parseMarkdown(weaknessesMatch[1].trim());
-  } else {
-    console.warn('EXTRACT_SECTIONS: Could not find Weaknesses section');
-    
-    // Try alternate format with ### heading
-    const altWeaknessesMatch = markdownContent.match(/### (?:Weaknesses|Challenges)\n?([\s\S]*?)(?=## Strategic|## Action|##)/i);
-    if (altWeaknessesMatch) {
-      console.log('EXTRACT_SECTIONS: Found Weaknesses section (alt format) of length:', altWeaknessesMatch[1].length);
-      sections.weaknesses = parseMarkdown(altWeaknessesMatch[1].trim());
-    } else {
-      // Last effort - try with just the word "Weaknesses" or "Challenges" at the beginning of a line
-      const lastResortMatch = markdownContent.match(/\n(?:Weaknesses|Challenges)[:\s]*\n([\s\S]*?)(?=## Strategic|## Action|##)/i);
-      if (lastResortMatch) {
-        console.log('EXTRACT_SECTIONS: Found Weaknesses section (last resort) of length:', lastResortMatch[1].length);
-        sections.weaknesses = parseMarkdown(lastResortMatch[1].trim());
+
+  // Extract weaknesses
+  for (const pattern of sectionPatterns.weaknesses) {
+    const weaknessesMatch = markdownContent.match(pattern);
+    if (weaknessesMatch) {
+      const content = weaknessesMatch[1].trim();
+      if (content) {
+        sections.weaknesses = parseMarkdown(content);
+        console.log('EXTRACT_SECTIONS: Found Weaknesses section of length:', content.length);
+        break;
       }
     }
+  }
+
+  // Log any missing sections
+  if (!sections.strengths) {
+    console.warn('EXTRACT_SECTIONS: Could not find Strengths section with any pattern');
+  }
+  if (!sections.weaknesses) {
+    console.warn('EXTRACT_SECTIONS: Could not find Weaknesses section with any pattern');
   }
   
   // Extract strategic plan section with any subsections
@@ -1137,4 +1175,4 @@ function fixNestedLists(html: string): string {
 }
 
 // Export the main function for use in other modules
-export { generateScorecardHTML }; 
+export { generateScorecardHTML };

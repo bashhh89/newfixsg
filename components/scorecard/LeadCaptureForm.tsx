@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { generateFindings, insertKeyFindings } from '@/lib/findings-generator';
 
 interface LeadCaptureFormProps {
   aiTier: string | null;
@@ -49,6 +50,9 @@ const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({
     setError(null);
 
     try {
+      // Calculate strengths and weaknesses based on questionAnswerHistory
+      const findings = generateFindings(questionAnswerHistory);
+      
       // Store the data in session storage first for later reference if needed
       if (typeof window !== 'undefined') {
         console.log('Storing lead data in session storage');
@@ -62,6 +66,12 @@ const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({
       // Determine if this is a pre-assessment or post-assessment lead capture
       const captureType = reportMarkdown ? 'leadCompleted' : 'leadCapture';
       console.log('Lead capture type:', captureType);
+
+      // Add Key Findings to the report markdown if it exists
+      let enhancedReportMarkdown = reportMarkdown;
+      if (reportMarkdown) {
+        enhancedReportMarkdown = insertKeyFindings(reportMarkdown, findings);
+      }
 
       // Send the notification
       console.log('Sending lead notification to API');
@@ -79,8 +89,9 @@ const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({
           consent: data.consent,
           aiTier: aiTier || 'Not Available',
           type: captureType,
-          reportMarkdown: reportMarkdown,
-          questionAnswerHistory: questionAnswerHistory.slice(0, 20)
+          reportMarkdown: enhancedReportMarkdown,
+          questionAnswerHistory: questionAnswerHistory.slice(0, 20),
+          findings: findings // Include the generated findings
         }),
       });
 

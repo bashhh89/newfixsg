@@ -44,23 +44,27 @@ const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({
   });
 
   const onSubmit = async (data: FormData) => {
+    console.log('Lead form submission started');
     setIsSubmitting(true);
     setError(null);
 
     try {
       // Store the data in session storage first for later reference if needed
       if (typeof window !== 'undefined') {
+        console.log('Storing lead data in session storage');
         sessionStorage.setItem('scorecardLeadName', data.fullName);
         sessionStorage.setItem('scorecardLeadCompany', data.companyName);
         sessionStorage.setItem('scorecardLeadEmail', data.email);
         sessionStorage.setItem('scorecardLeadPhone', data.phone || '');
-        sessionStorage.setItem('scorecardLeadIndustry', industry); // Store industry
+        sessionStorage.setItem('scorecardLeadIndustry', industry);
       }
 
       // Determine if this is a pre-assessment or post-assessment lead capture
       const captureType = reportMarkdown ? 'leadCompleted' : 'leadCapture';
+      console.log('Lead capture type:', captureType);
 
       // Send the notification
+      console.log('Sending lead notification to API');
       const response = await fetch('/api/send-lead-notification', {
         method: 'POST',
         headers: {
@@ -71,32 +75,35 @@ const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({
           leadCompany: data.companyName,
           leadEmail: data.email,
           leadPhone: data.phone,
-          industry: industry, // Include industry in the payload
-          consent: data.consent, // Add the consent field which is required by the API
+          industry: industry,
+          consent: data.consent,
           aiTier: aiTier || 'Not Available',
           type: captureType,
           reportMarkdown: reportMarkdown,
-          questionAnswerHistory: questionAnswerHistory.slice(0, 20) // Ensure we only send max 20 questions
+          questionAnswerHistory: questionAnswerHistory.slice(0, 20)
         }),
       });
 
       if (!response.ok) {
         const errorBody = await response.text();
         console.error('Failed to send lead notification:', response.status, errorBody);
-        setError(`Failed to submit lead data. Status: ${response.status}`);
-        // DO NOT call onSubmitSuccess if the API call failed
-        return;
+        throw new Error(`Failed to submit lead data. Status: ${response.status}`);
       }
 
       console.log('Lead notification sent successfully');
-      // Only proceed with the success callback if the API call was successful
+      
+      // Important: Call onSubmitSuccess before setting isSubmitting to false
       onSubmitSuccess(data.fullName);
 
     } catch (err) {
       console.error('Error in form submission:', err);
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      // Don't set isSubmitting to false here - move it to finally
     } finally {
-      setIsSubmitting(false);
+      // Add a small delay before setting isSubmitting to false to ensure state updates are processed
+      setTimeout(() => {
+        setIsSubmitting(false);
+      }, 100);
     }
   };
 

@@ -767,9 +767,14 @@ export default function Home() {
     console.log(`FRONTEND: generateReport function ended at: ${new Date().toISOString()}. Total duration: ${(Date.now() - startTime) / 1000}s`);
   }, [selectedIndustry, leadName, MAX_QUESTIONS]);
 
-  // Modified lead capture success handler - MOVED AFTER generateReport is defined
+  // Modified lead capture success handler
   const handleLeadCaptureSuccess = useCallback((capturedName: string) => {
     console.log("Frontend: Lead capture successful. Captured name:", capturedName);
+    
+    // Set loading state for report generation first
+    setIsGeneratingFinalReport(true);
+    
+    // Update lead capture state
     setLeadCaptured(true);
     setLeadName(capturedName);
 
@@ -778,11 +783,7 @@ export default function Home() {
       sessionStorage.setItem('scorecardUserName', capturedName);
     }
 
-    // MODIFIED: Instead of continuing with more questions, generate the report immediately
     console.log("Frontend: Lead capture successful. Generating report immediately.");
-    
-    // Set loading state for report generation
-    setIsGeneratingFinalReport(true);
     
     // Use the current history to generate the report
     const currentHistory = scorecardState.history;
@@ -790,8 +791,9 @@ export default function Home() {
     // Generate the report with exactly MAX_QUESTIONS answers or current answers if fewer
     generateReport(currentHistory.slice(0, MAX_QUESTIONS));
     
-    // The generateReport function now handles navigation directly
-  }, [setLeadCaptured, setLeadName, scorecardState.history, MAX_QUESTIONS, setIsGeneratingFinalReport, generateReport]);
+    // Set the current step to results to ensure proper navigation
+    setCurrentStep('results');
+  }, [setLeadCaptured, setLeadName, scorecardState.history, MAX_QUESTIONS, setIsGeneratingFinalReport, generateReport, setCurrentStep]);
 
   const handlePostAssessmentLeadCaptureSuccess = useCallback(() => {
     console.log("Post-assessment lead capture successful. Moving to results.");

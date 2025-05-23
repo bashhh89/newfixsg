@@ -1351,6 +1351,19 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       border-bottom: 1px solid ${colors.lightMint};
       padding-bottom: 5px;
     }
+    
+    /* Multi-column layout for Q&A items */
+    .qa-items-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: space-between;
+    }
+    
+    .qa-item-wrapper {
+      width: calc(50% - 8px);
+      page-break-inside: avoid;
+    }
 
     .qa-item {
       margin-bottom: 10px;
@@ -1770,24 +1783,30 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
         return `
           <div class="qa-phase">
             <h3>${phase}</h3>
-            ${questions.map(item => {
-              try {
-                console.log(`Rendering Q&A item: ${item.question?.substring(0, 30) || 'No question'}...`);
-                return `
-                  <div class="qa-item list-item-block">
-                    <p class="question"><strong>Q:</strong> ${item.question || 'Question not available'}</p>
-                    <p class="answer"><strong>A:</strong> ${formatAnswer(item)}</p>
-                  </div>
-                `;
-              } catch (error) {
-                console.error(`Error rendering Q&A item:`, error);
-                return `
-                  <div class="qa-item list-item-block">
-                    <p class="question"><strong>Error:</strong> Failed to render this Q&A item</p>
-                  </div>
-                `;
-              }
-            }).join('\n')}
+            <div class="qa-items-container">
+              ${questions.map(item => {
+                try {
+                  console.log(`Rendering Q&A item: ${item.question?.substring(0, 30) || 'No question'}...`);
+                  return `
+                    <div class="qa-item-wrapper">
+                      <div class="qa-item list-item-block">
+                        <p class="question"><strong>Q:</strong> ${item.question || 'Question not available'}</p>
+                        <p class="answer"><strong>A:</strong> ${formatAnswer(item)}</p>
+                      </div>
+                    </div>
+                  `;
+                } catch (error) {
+                  console.error(`Error rendering Q&A item:`, error);
+                  return `
+                    <div class="qa-item-wrapper">
+                      <div class="qa-item list-item-block">
+                        <p class="question"><strong>Error:</strong> Failed to render this Q&A item</p>
+                      </div>
+                    </div>
+                  `;
+                }
+              }).join('\n')}
+            </div>
           </div>
         `;
       }).join('\n');

@@ -762,19 +762,20 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       margin-bottom: 2em;
       padding: 25px;
       background-color: ${colors.white};
-      border: 1px solid ${colors.cardBorder};
+      border: 1px solid #e9ecef;
       border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
       page-break-inside: avoid;
     }
 
-    .action-plan-section h3 {
+    .action-plan-section h2 {
       margin-top: 0;
       color: ${colors.textDark};
-      font-size: 16pt;
+      font-size: 22px;
+      font-weight: 600;
       margin-bottom: 15px;
-      border-bottom: 1px solid ${colors.lightMint};
-      padding-bottom: 8px;
+      padding-bottom: 5px;
+      border-bottom: 2px solid ${colors.darkGreen};
     }
 
     .section-intro {
@@ -793,11 +794,13 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
     .action-item {
       margin-bottom: 12px;
       padding: 12px;
-      background-color: ${colors.lightMint};
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
       border-radius: 6px;
       border-left: 4px solid ${colors.darkGreen};
       display: flex;
       align-items: flex-start;
+      page-break-inside: avoid !important;
     }
 
     .action-number {
@@ -859,14 +862,61 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       font-family: 'Inter', sans-serif;
     }
 
+    .qa-section h2 {
+      margin-top: 0;
+      color: ${colors.textDark};
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      padding-bottom: 5px;
+      border-bottom: 2px solid ${colors.darkGreen};
+    }
+
+    .qa-phase h3 {
+      color: ${colors.textDark};
+      font-size: 14pt;
+      margin-top: 1.5em;
+      margin-bottom: 0.8em;
+      border-bottom: 1px solid ${colors.lightMint};
+      padding-bottom: 5px;
+    }
+
+    .qa-item {
+      margin-bottom: 10px;
+      padding: 10px;
+      background-color: ${colors.white};
+      border: 1px solid ${colors.cardBorder};
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      line-height: 1.6;
+      font-size: 10pt;
+    }
+
+    .qa-item p {
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .qa-item .question {
+      font-weight: bold;
+      color: ${colors.textDark};
+      margin-bottom: 5px;
+      display: block;
+    }
+
+    .qa-item .answer {
+      color: ${colors.textBody};
+      display: block;
+    }
+
     /* Fixed styling for content blocks within the main markdown section */
     .full-report-markdown-section {
       margin-bottom: 2em;
       padding: 25px;
       background-color: ${colors.white};
-      border: 1px solid ${colors.cardBorder};
+      border: 1px solid #e9ecef;
       border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
       page-break-inside: avoid;
     }
 
@@ -878,6 +928,13 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       margin-bottom: 15px;
       padding-bottom: 5px;
       border-bottom: 2px solid ${colors.darkGreen};
+    }
+
+    .section-intro {
+      margin-bottom: 15px;
+      line-height: 1.6;
+      color: ${colors.textDark};
+      font-size: 10pt;
     }
 
     .markdown-content {
@@ -905,7 +962,7 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
     }
 
     .markdown-content p {
-      margin-bottom: 1em;
+      margin-bottom: 12px;
       line-height: 1.6;
       font-size: 10pt;
       color: ${colors.textBody};
@@ -914,15 +971,21 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
     .markdown-content ul,
     .markdown-content ol {
       margin-bottom: 1em;
-      padding-left: 20px;
+      padding-left: 0;
+      list-style-type: none;
     }
 
     .markdown-content ul li {
       position: relative;
-      padding-left: 1em;
+      padding: 12px 12px 12px 30px;
       list-style-type: none;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       line-height: 1.6;
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      page-break-inside: avoid !important;
     }
 
     .markdown-content ul li::before {
@@ -930,19 +993,25 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       color: ${colors.darkGreen};
       font-weight: bold;
       position: absolute;
-      left: 0;
+      left: 12px;
     }
 
     .markdown-content ol li {
       list-style-position: outside;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       line-height: 1.6;
-      padding-left: 0.5em;
+      padding: 12px 12px 12px 12px;
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      margin-left: 20px;
+      page-break-inside: avoid !important;
     }
 
     /* Final Score Styling - Make it stand out */
     .final-score {
-      background-color: ${colors.scoreBg};
+      background-color: #f1f3f5;
       padding: 8px 12px;
       border-radius: 4px;
       font-weight: bold;
@@ -952,7 +1021,7 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       color: ${colors.textDark};
     }
 
-    /* Key Findings section styling */
+    /* Key Findings section styling - Improved for WeasyPrint */
     .key-findings-section {
       background-color: ${colors.white};
       border: 1px solid ${colors.cardBorder};
@@ -960,6 +1029,7 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
       margin-bottom: 20px;
+      page-break-inside: avoid;
     }
 
     .key-findings-section h3 {
@@ -967,58 +1037,54 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       margin-top: 0;
       margin-bottom: 15px;
       padding-bottom: 8px;
-      border-bottom: 1px solid ${colors.lightMint};
+      border-bottom: 2px solid ${colors.darkGreen};
+      font-size: 18pt;
+      font-weight: bold;
+      page-break-after: avoid;
     }
 
     .key-findings-section h4 {
       color: ${colors.textDark};
       margin-top: 15px;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
       font-weight: bold;
-    }
-
-    .qa-section h2 {
-      margin-top: 0;
-      color: ${colors.textDark};
-      font-size: 22px;
-      font-weight: 600;
-      margin-bottom: 15px;
-      padding-bottom: 5px;
-      border-bottom: 2px solid ${colors.darkGreen};
-    }
-
-    .qa-phase h3 {
-      color: ${colors.textDark};
       font-size: 14pt;
-      margin-top: 1.5em;
-      margin-bottom: 0.8em;
-      border-bottom: 1px solid ${colors.lightMint};
-      padding-bottom: 5px;
+      page-break-after: avoid;
     }
 
-    .qa-item {
-      margin-bottom: 1em;
-      padding: 12px;
-      background-color: ${colors.lightMint};
-      border-radius: 6px;
+    /* Finding Item Card - Styled for better WeasyPrint rendering */
+    .finding-item-card {
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
       border-left: 4px solid ${colors.darkGreen};
+      padding: 15px;
+      margin-bottom: 12px;
+      border-radius: 4px;
+      page-break-inside: avoid !important;
       line-height: 1.6;
-      font-size: 10pt;
+      font-family: 'Inter', sans-serif;
+      position: relative;
+      display: block;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
 
-    .qa-item p {
-      margin: 0;
-      line-height: 1.6;
+    /* Updated list styles for Key Findings */
+    .key-findings-section ul,
+    .key-findings-section ol {
+      list-style-type: none;
+      padding-left: 0;
+      margin-top: 10px;
+      margin-bottom: 15px;
     }
 
-    .qa-item .question {
-      font-weight: bold;
-      color: ${colors.textDark};
-      margin-bottom: 0.4em;
+    .key-findings-section ul li,
+    .key-findings-section ol li {
+      margin-bottom: 12px;
+      page-break-inside: avoid !important;
     }
 
-    .qa-item .answer {
-      color: ${colors.textDark};
+    .key-findings-section ul li::before {
+      content: none;
     }
 
     /* Print-Specific Styles */
@@ -1090,14 +1156,14 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       <div class="strengths-section">
         <h4>Your Strengths</h4>
         ${strengths.length > 0 ? `<ul>
-          ${strengths.map(strength => `<li>${strength}</li>`).join('\n')}
+          ${strengths.map(strength => `<li class="finding-item-card">${strength}</li>`).join('\n')}
         </ul>` : '<p>No specific strengths were identified in the assessment.</p>'}
       </div>
       
       <div class="focus-areas-section">
         <h4>Focus Areas</h4>
         ${weaknesses.length > 0 ? `<ul>
-          ${weaknesses.map(weakness => `<li>${weakness}</li>`).join('\n')}
+          ${weaknesses.map(weakness => `<li class="finding-item-card">${weakness}</li>`).join('\n')}
         </ul>` : '<p>No specific focus areas were identified in the assessment.</p>'}
       </div>
     </div>
@@ -1121,6 +1187,10 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
         .replace(/## Key Findings([\s\S]*?)(?=##|$)/g, match => `<div class="key-findings-section"><h3>Key Findings</h3>${match.replace(/## Key Findings/, '')}</div>`)
         .replace(/### Your Strengths/g, '<h4>Your Strengths</h4>')
         .replace(/### Focus Areas/g, '<h4>Focus Areas</h4>')
+        .replace(/<li>([^<]+)<\/li>/g, match => {
+          const content = match.replace(/<\/?li>/g, '');
+          return `<li class="finding-item-card">${content}</li>`;
+        })
         .replace(/### (Sample AI Goal-Setting Meeting Agenda|Example Prompts for Your Team|Illustrative Benchmarks|Personalized AI Learning Path)/g, match => `<div class="key-findings-section"><h3>${match.replace(/### /, '')}</h3>`)
         .replace(/### ([^#]+?)(?=###|##|$)/g, match => `${match}</div>`)
       }

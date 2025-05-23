@@ -31,6 +31,13 @@ async function fetchReportData(reportId: string): Promise<ScorecardData> {
       Industry: reportData.industry || reportData.UserInformation?.Industry || 'Industry',
       Email: reportData.leadEmail || reportData.email || reportData.UserInformation?.Email || 'user@example.com'
     };
+    
+    // Log the extracted user information for debugging
+    console.log("Extracted UserInformation:", JSON.stringify(userInformation, null, 2));
+    console.log("Industry source:", 
+      reportData.industry ? "reportData.industry" : 
+      reportData.UserInformation?.Industry ? "reportData.UserInformation.Industry" : 
+      "Using fallback value");
 
     const scoreInformation = reportData.ScoreInformation || {
       AITier: reportData.tier || reportData.userAITier || reportData.aiTier || 'Dabbler',

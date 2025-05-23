@@ -296,19 +296,36 @@ function extractWeaknesses(markdownContent: string): string[] {
  * Format answers based on answerType
  */
 function formatAnswer(item: AnswerHistoryEntry): string {
-  if (!item.answer) return '';
+  if (item.answer === undefined || item.answer === null || item.answer === '') return 'No answer provided';
   
+  // Handle different answer types
   if (item.answerType === 'scale' && !isNaN(Number(item.answer))) {
     return `<span class="scale-value">${item.answer}</span>`;
   }
   
   if (item.answerType === 'checkbox' || item.answerType === 'radio') {
+    // Handle array answers
+    if (Array.isArray(item.answer)) {
+      return item.answer.join(', ');
+    }
+    
+    // Handle pipe-delimited string answers
     if (typeof item.answer === 'string' && item.answer.includes('|')) {
       return item.answer.split('|').map(a => a.trim()).join(', ');
     }
+    
+    // Handle newline-delimited string answers (common in checkbox responses)
+    if (typeof item.answer === 'string' && item.answer.includes('\n')) {
+      return item.answer.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .map(line => line.startsWith('-') ? line.substring(1).trim() : line)
+        .join(', ');
+    }
   }
   
-  return item.answer;
+  // For text answers, ensure we're returning a string
+  return String(item.answer);
 }
 
 /**
@@ -492,6 +509,18 @@ function debugReportData(data: ScorecardData): void {
   if (data.QuestionAnswerHistory && data.QuestionAnswerHistory.length > 0) {
     console.log('First question sample:', JSON.stringify(data.QuestionAnswerHistory[0], null, 2));
     
+    // Check for required fields in all Q&A items
+    const missingFields = data.QuestionAnswerHistory.map((item, index) => {
+      const missing = [];
+      if (!item.question) missing.push('question');
+      if (item.answer === undefined || item.answer === null) missing.push('answer');
+      return { index, missing };
+    }).filter(item => item.missing.length > 0);
+    
+    if (missingFields.length > 0) {
+      console.log('WARNING: Some Q&A items are missing required fields:', missingFields);
+    }
+    
     // Group by phase to check what phases are available
     const phases = data.QuestionAnswerHistory.reduce((acc, item) => {
       const phase = item.phaseName || 'Uncategorized';
@@ -501,6 +530,8 @@ function debugReportData(data: ScorecardData): void {
     }, {} as Record<string, number>);
     
     console.log('Questions by phase:', phases);
+  } else {
+    console.log('WARNING: No QuestionAnswerHistory data available!');
   }
   
   // Check if markdown content exists and log its structure
@@ -565,7 +596,71 @@ function renderFullReportMarkdown(markdownContent: string): string {
     /## Key Findings([\s\S]*?)(?=##|$)/g, 
     match => {
       console.log('Found and styling Key Findings section');
-      return `<div class="key-findings-section"><h3>Key Findings</h3>${match.replace(/## Key Findings/, '')}</div>`;
+      
+      // Extract the content after "## Key Findings"
+      const content = match.replace(/## Key Findings/, '').trim();
+      
+      // Check if we have both strengths and weaknesses sections
+      const hasStrengths = content.includes('<h4>Your Strengths</h4>') || 
+                          content.includes('<strong>Strengths:</strong>');
+      const hasWeaknesses = content.includes('<h4>Focus Areas</h4>') || 
+                           content.includes('<h4>Areas for Improvement</h4>') ||
+                           content.includes('<strong>Weaknesses:</strong>');
+      
+      if (hasStrengths && hasWeaknesses) {
+        // Split content into strengths and weaknesses
+        let strengthsContent = '';
+        let weaknessesContent = '';
+        
+        if (content.includes('<h4>Your Strengths</h4>')) {
+          const strengthsMatch = content.match(/<h4>Your Strengths<\/h4>([\s\S]*?)(?=<h4>|$)/);
+          if (strengthsMatch && strengthsMatch[1]) {
+            strengthsContent = strengthsMatch[1].trim();
+          }
+        } else if (content.includes('<strong>Strengths:</strong>')) {
+          const strengthsMatch = content.match(/<strong>Strengths:<\/strong>([\s\S]*?)(?=<strong>Weaknesses:|$)/);
+          if (strengthsMatch && strengthsMatch[1]) {
+            strengthsContent = `<h4>Your Strengths</h4>${strengthsMatch[1].trim()}`;
+          }
+        }
+        
+        if (content.includes('<h4>Focus Areas</h4>')) {
+          const weaknessesMatch = content.match(/<h4>Focus Areas<\/h4>([\s\S]*?)(?=<h4>|$)/);
+          if (weaknessesMatch && weaknessesMatch[1]) {
+            weaknessesContent = weaknessesMatch[1].trim();
+          }
+        } else if (content.includes('<h4>Areas for Improvement</h4>')) {
+          const weaknessesMatch = content.match(/<h4>Areas for Improvement<\/h4>([\s\S]*?)(?=<h4>|$)/);
+          if (weaknessesMatch && weaknessesMatch[1]) {
+            weaknessesContent = weaknessesMatch[1].trim();
+          }
+        } else if (content.includes('<strong>Weaknesses:</strong>')) {
+          const weaknessesMatch = content.match(/<strong>Weaknesses:<\/strong>([\s\S]*?)(?=<strong>|$)/);
+          if (weaknessesMatch && weaknessesMatch[1]) {
+            weaknessesContent = `<h4>Focus Areas</h4>${weaknessesMatch[1].trim()}`;
+          }
+        }
+        
+        // Create two-column layout
+        if (strengthsContent && weaknessesContent) {
+          return `<div class="key-findings-section">
+            <h3>Key Findings</h3>
+            <div class="key-findings-columns">
+              <div class="key-findings-column">
+                <h4>Your Strengths</h4>
+                ${strengthsContent.replace(/<h4>Your Strengths<\/h4>/, '')}
+              </div>
+              <div class="key-findings-column">
+                <h4>Focus Areas</h4>
+                ${weaknessesContent.replace(/<h4>Focus Areas<\/h4>|<h4>Areas for Improvement<\/h4>/, '')}
+              </div>
+            </div>
+          </div>`;
+        }
+      }
+      
+      // Default to original processing if we couldn't extract both sections
+      return `<div class="key-findings-section"><h3>Key Findings</h3>${content}</div>`;
     }
   );
   
@@ -589,15 +684,13 @@ function renderFullReportMarkdown(markdownContent: string): string {
     'Sample AI Goal-Setting Meeting Agenda',
     'Example Prompts for Your Team',
     'Illustrative Benchmarks',
-    'Personalized AI Learning Path',
-    'Getting Started & Resources',
-    'Your Learning Path & Resources',
     'Recommendations',
     'Detailed Analysis'
   ];
   
   let processedHtml = withStyledListItems;
   
+  // Process standard sections
   specialSections.forEach(section => {
     const sectionRegex = new RegExp(`### ${section}([\\s\\S]*?)(?=###|##|$)`, 'g');
     processedHtml = processedHtml.replace(
@@ -605,6 +698,83 @@ function renderFullReportMarkdown(markdownContent: string): string {
       match => {
         console.log(`Found and styling section: ${section}`);
         return `<div class="key-findings-section"><h3>${section}</h3>${match.replace(`### ${section}`, '')}</div>`;
+      }
+    );
+  });
+  
+  // Process Learning Path and Resources sections with potential two-column layout
+  const learningPathSections = [
+    'Personalized AI Learning Path',
+    'Getting Started & Resources',
+    'Your Learning Path & Resources'
+  ];
+  
+  learningPathSections.forEach(section => {
+    const sectionRegex = new RegExp(`### ${section}([\\s\\S]*?)(?=###|##|$)`, 'g');
+    processedHtml = processedHtml.replace(
+      sectionRegex,
+      match => {
+        console.log(`Found and styling learning path section: ${section}`);
+        
+        const content = match.replace(`### ${section}`, '').trim();
+        
+        // Check if we can identify distinct subsections for a two-column layout
+        // Look for common patterns like "Learning Path" and "Recommended Resources" subsections
+        const hasLearningPath = content.includes('<h4>Your Learning Path</h4>') || 
+                               content.includes('<strong>Learning Path:</strong>') ||
+                               content.includes('<h4>Personalized Learning Path</h4>');
+        
+        const hasResources = content.includes('<h4>Recommended Resources</h4>') || 
+                            content.includes('<strong>Resources:</strong>') ||
+                            content.includes('<h4>Key Resources</h4>');
+        
+        if (hasLearningPath && hasResources) {
+          // Extract learning path content
+          let learningPathContent = '';
+          if (content.includes('<h4>Your Learning Path</h4>')) {
+            const match = content.match(/<h4>Your Learning Path<\/h4>([\s\S]*?)(?=<h4>|$)/);
+            if (match && match[1]) learningPathContent = match[1].trim();
+          } else if (content.includes('<h4>Personalized Learning Path</h4>')) {
+            const match = content.match(/<h4>Personalized Learning Path<\/h4>([\s\S]*?)(?=<h4>|$)/);
+            if (match && match[1]) learningPathContent = match[1].trim();
+          } else if (content.includes('<strong>Learning Path:</strong>')) {
+            const match = content.match(/<strong>Learning Path:<\/strong>([\s\S]*?)(?=<strong>Resources:|$)/);
+            if (match && match[1]) learningPathContent = match[1].trim();
+          }
+          
+          // Extract resources content
+          let resourcesContent = '';
+          if (content.includes('<h4>Recommended Resources</h4>')) {
+            const match = content.match(/<h4>Recommended Resources<\/h4>([\s\S]*?)(?=<h4>|$)/);
+            if (match && match[1]) resourcesContent = match[1].trim();
+          } else if (content.includes('<h4>Key Resources</h4>')) {
+            const match = content.match(/<h4>Key Resources<\/h4>([\s\S]*?)(?=<h4>|$)/);
+            if (match && match[1]) resourcesContent = match[1].trim();
+          } else if (content.includes('<strong>Resources:</strong>')) {
+            const match = content.match(/<strong>Resources:<\/strong>([\s\S]*?)(?=<strong>|$)/);
+            if (match && match[1]) resourcesContent = match[1].trim();
+          }
+          
+          // If we have both sections, create a two-column layout
+          if (learningPathContent && resourcesContent) {
+            return `<div class="key-findings-section learning-path-section">
+              <h3>${section}</h3>
+              <div class="learning-path-columns">
+                <div class="learning-path-column">
+                  <h4>Your Learning Path</h4>
+                  ${learningPathContent}
+                </div>
+                <div class="learning-path-column">
+                  <h4>Recommended Resources</h4>
+                  ${resourcesContent}
+                </div>
+              </div>
+            </div>`;
+          }
+        }
+        
+        // Default to single column if we couldn't identify subsections
+        return `<div class="key-findings-section"><h3>${section}</h3>${content}</div>`;
       }
     );
   });
@@ -878,7 +1048,8 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       display: flex;
       justify-content: space-between;
       gap: 20px;
-      margin-top: 1.5em;
+      margin-top: 20px;
+      page-break-inside: avoid;
     }
 
     .assessment-results-section .strengths-section,
@@ -889,14 +1060,15 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       background-color: ${colors.white};
       border: 1px solid ${colors.cardBorder};
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+      page-break-inside: avoid;
     }
 
     .assessment-results-section .strengths-section h4,
     .assessment-results-section .focus-areas-section h4 {
       color: ${colors.textDark};
-      font-size: 12pt;
+      font-size: 14px;
       margin-top: 0;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
       font-weight: bold;
       text-align: center;
       padding-bottom: 8px;
@@ -929,6 +1101,10 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       font-size: 10pt;
       page-break-inside: avoid;
     }
+    
+    .assessment-results-section .next-steps-summary p {
+      margin: 0;
+    }
 
     /* Header */
     .main-header {
@@ -943,11 +1119,18 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       page-break-inside: avoid;
     }
 
+    .main-header h1 {
+      font-size: 28px;
+      font-weight: bold;
+      margin: 0 0 8px 0;
+      color: ${colors.textDark};
+    }
+
     .main-header p {
-      font-size: 16px;
+      font-size: 14px;
       color: ${colors.textMuted};
-      margin-top: 0.5em;
-      line-height: 1.6;
+      margin: 0;
+      line-height: 1.4;
     }
 
     /* Client Info Section */
@@ -955,123 +1138,120 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       display: flex;
       justify-content: space-between;
       gap: 20px;
-      margin-bottom: 2em;
-      padding: 0;
-      background-color: transparent;
-      border: none;
-      box-shadow: none;
+      margin-bottom: 30px;
+      page-break-inside: avoid;
     }
 
     .info-card {
       flex: 1;
+      background-color: ${colors.white};
       border: 1px solid ${colors.cardBorder};
       border-radius: 6px;
       padding: 20px;
-      background-color: ${colors.white};
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
       page-break-inside: avoid;
     }
 
     .info-card h3 {
+      font-size: 16px;
+      font-weight: bold;
       margin-top: 0;
-      color: ${colors.textDark};
-      border-bottom: 1px solid ${colors.lightMint};
-      padding-bottom: 10px;
       margin-bottom: 15px;
-      font-size: 15pt;
+      padding-bottom: 10px;
+      border-bottom: 1px solid ${colors.lightMint};
+      color: ${colors.textDark};
     }
 
     .info-card p {
-      margin-bottom: 0.8em;
-      line-height: 1.6;
+      margin-bottom: 10px;
+      line-height: 1.5;
+      font-size: 11pt;
+    }
+
+    .info-card p:last-child {
+      margin-bottom: 0;
     }
 
     .info-card p strong {
       display: inline-block;
-      min-width: 100px;
-      margin-right: 10px;
+      min-width: 80px;
+      color: ${colors.textDark};
     }
 
     /* Overall Tier Card Container */
     .tier-card-container {
-      margin-bottom: 2em;
-      padding: 25px;
       background-color: ${colors.white};
       border: 1px solid ${colors.cardBorder};
       border-radius: 6px;
+      padding: 25px;
+      margin-bottom: 30px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
-      page-break-inside: avoid;
       text-align: center;
+      page-break-inside: avoid;
     }
 
     .tier-card-container h3 {
+      font-size: 16px;
+      font-weight: bold;
       margin-top: 0;
-      margin-bottom: 15px;
+      margin-bottom: 20px;
+      color: ${colors.textDark};
       border-bottom: none;
-      padding-bottom: 0;
     }
 
-    /* Overall Tier Section */
     .overall-tier-section {
       margin-bottom: 0;
-      padding: 0;
-      background-color: transparent;
-      border: none;
-      box-shadow: none;
-      page-break-inside: auto;
     }
 
     .overall-tier-section .tier-value {
-      font-size: 30pt;
+      font-size: 24pt;
       font-weight: bold;
       color: ${colors.darkGreen};
-      margin: 10px 0;
-      padding: 8px;
       background-color: #e6f7ee;
-      border-radius: 6px;
+      padding: 8px 15px;
+      border-radius: 4px;
       display: inline-block;
-      min-width: 180px;
+      min-width: 150px;
+      margin: 0 auto 10px;
     }
 
     .overall-tier-section .tier-label {
-      font-size: 10pt;
-      color: ${colors.textDark};
-      margin-top: 8px;
-      font-weight: 600;
+      font-size: 11pt;
+      color: ${colors.textMuted};
+      margin-top: 10px;
+      font-weight: normal;
     }
 
     /* Assessment Results Section */
     .assessment-results-section {
-      margin-bottom: 2em;
-      padding: 25px;
       background-color: ${colors.white};
       border: 1px solid ${colors.cardBorder};
       border-radius: 6px;
+      padding: 25px;
+      margin-bottom: 30px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
       page-break-inside: avoid;
     }
 
     .assessment-results-section h3 {
+      font-size: 16px;
+      font-weight: bold;
       margin-top: 0;
-      color: ${colors.textDark};
-      font-size: 16pt;
       margin-bottom: 15px;
+      padding-bottom: 10px;
       border-bottom: 1px solid ${colors.lightMint};
-      padding-bottom: 8px;
+      color: ${colors.textDark};
     }
 
     .assessment-results-section .intro-text {
       margin-bottom: 20px;
       line-height: 1.6;
-      font-size: 10pt;
-      color: ${colors.textDark};
-      padding: 20px;
-      background-color: ${colors.white};
-      border-radius: 8px;
-      border: 1px solid ${colors.cardBorder};
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
-      font-style: normal;
-      page-break-inside: avoid;
+      font-size: 11pt;
+      color: ${colors.textBody};
+      padding: 0;
+      background-color: transparent;
+      border: none;
+      box-shadow: none;
     }
 
     /* Strategic Action Plan Section */
@@ -1277,6 +1457,20 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
     .key-findings-section ul li::before {
       content: none;
     }
+    
+    /* New two-column layout for strengths and weaknesses */
+    .key-findings-columns {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-top: 20px;
+      page-break-inside: avoid;
+    }
+    
+    .key-findings-column {
+      flex: 1;
+      page-break-inside: avoid;
+    }
 
     /* Print-Specific Styles */
     @media print {
@@ -1406,6 +1600,36 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       margin-left: 20px;
       page-break-inside: avoid !important;
     }
+
+    /* Learning Path and Resources section styling */
+    .learning-path-section {
+      margin-bottom: 2em;
+    }
+    
+    .learning-path-columns {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-top: 20px;
+      page-break-inside: avoid;
+    }
+    
+    .learning-path-column {
+      flex: 1;
+      page-break-inside: avoid;
+    }
+    
+    .learning-path-column h4 {
+      color: ${colors.textDark};
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-weight: bold;
+      font-size: 14pt;
+      page-break-after: avoid;
+      text-align: center;
+      padding-bottom: 8px;
+      border-bottom: 1px solid ${colors.lightMint};
+    }
   </style>
 </head>
 <body>
@@ -1521,29 +1745,53 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
     <p class="section-intro">
       Here are the questions you were asked and your responses during the AI Efficiency Scorecard assessment:
     </p>
-    ${QuestionAnswerHistory && QuestionAnswerHistory.length > 0 ? 
-      (() => {
-        console.log(`Rendering Q&A section with ${QuestionAnswerHistory.length} items`);
-        const groupedByPhase = groupByPhase(QuestionAnswerHistory);
-        return Object.entries(groupedByPhase).map(([phase, questions]) => `
+    ${(() => {
+      if (!QuestionAnswerHistory || QuestionAnswerHistory.length === 0) {
+        console.log('No QuestionAnswerHistory data available for rendering Q&A section');
+        return `
+        <div class="empty-plan-message">
+          <p>No question and answer history available for this report.</p>
+        </div>`;
+      }
+      
+      console.log(`Rendering Q&A section with ${QuestionAnswerHistory.length} items`);
+      const groupedByPhase = groupByPhase(QuestionAnswerHistory);
+      
+      if (Object.keys(groupedByPhase).length === 0) {
+        console.log('No phases found in QuestionAnswerHistory');
+        return `
+        <div class="empty-plan-message">
+          <p>Question and answer data is available but could not be organized by assessment phase.</p>
+        </div>`;
+      }
+      
+      return Object.entries(groupedByPhase).map(([phase, questions]) => {
+        console.log(`Rendering phase: ${phase} with ${questions.length} questions`);
+        return `
           <div class="qa-phase">
             <h3>${phase}</h3>
             ${questions.map(item => {
-              console.log(`Rendering Q&A item: ${item.question.substring(0, 30)}...`);
-              return `
-                <div class="qa-item list-item-block">
-                  <p class="question"><strong>Q:</strong> ${item.question}</p>
-                  <p class="answer"><strong>A:</strong> ${formatAnswer(item)}</p>
-                </div>
-              `;
+              try {
+                console.log(`Rendering Q&A item: ${item.question?.substring(0, 30) || 'No question'}...`);
+                return `
+                  <div class="qa-item list-item-block">
+                    <p class="question"><strong>Q:</strong> ${item.question || 'Question not available'}</p>
+                    <p class="answer"><strong>A:</strong> ${formatAnswer(item)}</p>
+                  </div>
+                `;
+              } catch (error) {
+                console.error(`Error rendering Q&A item:`, error);
+                return `
+                  <div class="qa-item list-item-block">
+                    <p class="question"><strong>Error:</strong> Failed to render this Q&A item</p>
+                  </div>
+                `;
+              }
             }).join('\n')}
           </div>
-        `).join('\n');
-      })() : `
-      <div class="empty-plan-message">
-        <p>No question and answer history available for this report.</p>
-      </div>`
-    }
+        `;
+      }).join('\n');
+    })()}
   </div>
   
   <!-- Footer -->

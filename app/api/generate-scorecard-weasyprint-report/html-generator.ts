@@ -47,13 +47,99 @@ function extractStrategicPlan(markdownContent: string): string[] {
   
   if (!match || !match[1]) {
     console.log('No Strategic Action Plan section found');
+    
+    // Try alternative headings
+    const recommendationsRegex = /## Recommendations\s*([\s\S]*?)(?=##|$)/i;
+    const recMatch = markdownContent.match(recommendationsRegex);
+    
+    if (recMatch && recMatch[1]) {
+      console.log('Found Recommendations section instead');
+      const recContent = recMatch[1].trim();
+      console.log('Recommendations content length:', recContent.length);
+      
+      // Process recommendations as action items
+      const items: string[] = [];
+      const lines = recContent.split('\n');
+      
+      let currentItem = '';
+      let collectingItem = false;
+      
+      for (const line of lines) {
+        // Check if this line starts a new numbered or bullet item
+        if (/^\d+\./.test(line.trim()) || /^[•\-]/.test(line.trim())) {
+          // If we were collecting a previous item, save it
+          if (collectingItem && currentItem.trim()) {
+            items.push(currentItem.trim());
+          }
+          
+          // Start collecting a new item
+          currentItem = line.trim();
+          collectingItem = true;
+        } 
+        // If we're collecting an item and this is a continuation line
+        else if (collectingItem && line.trim()) {
+          currentItem += ' ' + line.trim();
+        }
+      }
+      
+      // Don't forget to add the last item
+      if (collectingItem && currentItem.trim()) {
+        items.push(currentItem.trim());
+      }
+      
+      console.log(`Found ${items.length} recommendation items`);
+      
+      // Format the items for better display
+      return items.map(item => {
+        // Handle bullet points
+        if (item.startsWith('•') || item.startsWith('-')) {
+          const content = item.replace(/^[•\-]\s*/, '').trim();
+          
+          // Try to extract the title if it's in bold format
+          const boldTitleMatch = content.match(/\*\*([^:]+):\*\*\s*(.*)/);
+          if (boldTitleMatch) {
+            return `<strong>${boldTitleMatch[1]}</strong>: ${boldTitleMatch[2]}`;
+          }
+          
+          // Try to extract the title if it's in regular format
+          const regularTitleMatch = content.match(/([^:]+):\s*(.*)/);
+          if (regularTitleMatch) {
+            return `<strong>${regularTitleMatch[1]}</strong>: ${regularTitleMatch[2]}`;
+          }
+          
+          return content;
+        }
+        
+        // Handle numbered items
+        if (/^\d+\./.test(item)) {
+          const content = item.replace(/^\d+\.\s*/, '').trim();
+          
+          // Try to extract the title if it's in bold format
+          const boldTitleMatch = content.match(/\*\*([^:]+):\*\*\s*(.*)/);
+          if (boldTitleMatch) {
+            return `<strong>${boldTitleMatch[1]}</strong>: ${boldTitleMatch[2]}`;
+          }
+          
+          // Try to extract the title if it's in regular format
+          const regularTitleMatch = content.match(/([^:]+):\s*(.*)/);
+          if (regularTitleMatch) {
+            return `<strong>${regularTitleMatch[1]}</strong>: ${regularTitleMatch[2]}`;
+          }
+          
+          return content;
+        }
+        
+        return item;
+      });
+    }
+    
     return [];
   }
   
   const planContent = match[1].trim();
   console.log('Found Strategic Action Plan section with content length:', planContent.length);
   
-  // Split the content by numbered items (1., 2., etc.)
+  // Split the content by numbered items (1., 2., etc.) or bullet points
   const items: string[] = [];
   const lines = planContent.split('\n');
   
@@ -61,8 +147,8 @@ function extractStrategicPlan(markdownContent: string): string[] {
   let collectingItem = false;
   
   for (const line of lines) {
-    // Check if this line starts a new numbered item
-    if (/^\d+\./.test(line.trim())) {
+    // Check if this line starts a new numbered or bullet item
+    if (/^\d+\./.test(line.trim()) || /^[•\-]/.test(line.trim())) {
       // If we were collecting a previous item, save it
       if (collectingItem && currentItem.trim()) {
         items.push(currentItem.trim());
@@ -87,6 +173,25 @@ function extractStrategicPlan(markdownContent: string): string[] {
   
   // Format the items for better display
   return items.map(item => {
+    // Handle bullet points
+    if (item.startsWith('•') || item.startsWith('-')) {
+      const content = item.replace(/^[•\-]\s*/, '').trim();
+      
+      // Try to extract the title if it's in bold format
+      const boldTitleMatch = content.match(/\*\*([^:]+):\*\*\s*(.*)/);
+      if (boldTitleMatch) {
+        return `<strong>${boldTitleMatch[1]}</strong>: ${boldTitleMatch[2]}`;
+      }
+      
+      // Try to extract the title if it's in regular format
+      const regularTitleMatch = content.match(/([^:]+):\s*(.*)/);
+      if (regularTitleMatch) {
+        return `<strong>${regularTitleMatch[1]}</strong>: ${regularTitleMatch[2]}`;
+      }
+      
+      return content;
+    }
+    
     // Try to extract the title if it's in bold format: "1. **Title:** Description"
     const boldTitleMatch = item.match(/^\d+\.\s+\*\*([^:]+):\*\*\s*(.*)/);
     if (boldTitleMatch) {
@@ -108,12 +213,18 @@ function extractStrategicPlan(markdownContent: string): string[] {
  * Extract strengths from markdown content
  */
 function extractStrengths(markdownContent: string): string[] {
-  const strengths: string[] = [];
+  if (!markdownContent) {
+    console.log('No markdown content provided to extractStrengths');
+    return [];
+  }
+  
+  console.log('Extracting strengths from markdown content...');
   
   // Look for "Your Strengths" heading followed by a list (handles both • and - bullet points and variations in spacing)
-  const strengthsMatch = markdownContent.match(/Your Strengths\s*[\r\n]+([\s\S]*?)(?=Focus Areas|##|$)/i);
+  const strengthsMatch = markdownContent.match(/Your Strengths\s*[\r\n]+([\s\S]*?)(?=Focus Areas|Areas for Improvement|##|$)/i);
   if (strengthsMatch && strengthsMatch[1]) {
     const strengthContent = strengthsMatch[1].trim();
+    console.log('Found Your Strengths section with content:', strengthContent.substring(0, 100) + '...');
     // Extract bullet points (handles both • and - and leading/trailing whitespace)
     const bulletPoints = strengthContent.split(/[\r\n]+/).filter(line => line.trim().startsWith('•') || line.trim().startsWith('-'));
     return bulletPoints.map(point => renderMarkdown(point.trim().replace(/^[•-]\s*/, '').trim()));
@@ -125,24 +236,32 @@ function extractStrengths(markdownContent: string): string[] {
     const strengthsMatchFallback = keyFindingsMatch[1].match(/\*\*Strengths:\*\*([\s\S]*?)(?=\*\*Weaknesses|$)/i);
     if (strengthsMatchFallback) {
       const strengthContent = strengthsMatchFallback[1].trim();
+      console.log('Found Strengths section with content:', strengthContent.substring(0, 100) + '...');
       const bulletPoints = strengthContent.split('\n').filter(line => line.trim().startsWith('-'));
       return bulletPoints.map(point => point.replace(/^-\s*/, '').trim());
     }
   }
   
-  return strengths;
+  console.log('No strengths found in markdown content');
+  return [];
 }
 
 /**
  * Extract weaknesses (Focus Areas) from markdown content
  */
 function extractWeaknesses(markdownContent: string): string[] {
-  const weaknesses: string[] = [];
+  if (!markdownContent) {
+    console.log('No markdown content provided to extractWeaknesses');
+    return [];
+  }
+  
+  console.log('Extracting weaknesses/focus areas from markdown content...');
   
   // Look for "Focus Areas" heading followed by a list (handles both • and - bullet points and variations in spacing)
   const focusAreasMatch = markdownContent.match(/Focus Areas\s*[\r\n]+([\s\S]*?)(?=Next Steps|##|$)/i);
-   if (focusAreasMatch && focusAreasMatch[1]) {
+  if (focusAreasMatch && focusAreasMatch[1]) {
     const focusAreasContent = focusAreasMatch[1].trim();
+    console.log('Found Focus Areas section with content:', focusAreasContent.substring(0, 100) + '...');
     // Extract bullet points (handles both • and - and leading/trailing whitespace)
     const bulletPoints = focusAreasContent.split(/[\r\n]+/).filter(line => line.trim().startsWith('•') || line.trim().startsWith('-'));
     return bulletPoints.map(point => renderMarkdown(point.trim().replace(/^[•-]\s*/, '').trim()));
@@ -154,12 +273,23 @@ function extractWeaknesses(markdownContent: string): string[] {
     const weaknessesMatchFallback = keyFindingsMatch[1].match(/\*\*Weaknesses:\*\*([\s\S]*?)(?=##|$)/i);
     if (weaknessesMatchFallback) {
       const weaknessContent = weaknessesMatchFallback[1].trim();
+      console.log('Found Weaknesses section with content:', weaknessContent.substring(0, 100) + '...');
       const bulletPoints = weaknessContent.split('\n').filter(line => line.trim().startsWith('-'));
       return bulletPoints.map(point => point.replace(/^-\s*/, '').trim());
     }
   }
   
-  return weaknesses;
+  // Additional fallback for "Areas for Improvement" terminology
+  const areasForImprovementMatch = markdownContent.match(/Areas for Improvement\s*[\r\n]+([\s\S]*?)(?=Next Steps|##|$)/i);
+  if (areasForImprovementMatch && areasForImprovementMatch[1]) {
+    const improvementContent = areasForImprovementMatch[1].trim();
+    console.log('Found Areas for Improvement section with content:', improvementContent.substring(0, 100) + '...');
+    const bulletPoints = improvementContent.split(/[\r\n]+/).filter(line => line.trim().startsWith('•') || line.trim().startsWith('-'));
+    return bulletPoints.map(point => renderMarkdown(point.trim().replace(/^[•-]\s*/, '').trim()));
+  }
+  
+  console.log('No weaknesses/focus areas found in markdown content');
+  return [];
 }
 
 /**
@@ -222,9 +352,9 @@ const getTierDescription = (tier: string | null): string => {
 function renderMarkdown(markdown: string): string {
   if (!markdown) return '';
 
-  // Basic replacements for common markdown elements
+  // Basic replacements for common markdown elements - FIX BOLD RENDERING FIRST
   let html = markdown
-    // Replace bold
+    // Replace bold - improved regex to ensure complete capture
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     // Replace italic
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
@@ -241,12 +371,19 @@ function renderMarkdown(markdown: string): string {
   let processedLines = [];
   let inList = false;
   let listType = '';
-  let listContent = '';
   let inParagraph = false;
   let paragraphContent = '';
+  let inKeyFindings = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
+    
+    // Check if we're entering or leaving the Key Findings section
+    if (line.match(/^<h2>Key Findings<\/h2>$/)) {
+      inKeyFindings = true;
+    } else if (line.match(/^<h2>/)) {
+      inKeyFindings = false;
+    }
     
     // Skip empty lines
     if (!line) {
@@ -308,7 +445,12 @@ function renderMarkdown(markdown: string): string {
         ? line.replace(/^[*+-]\s+/, '') 
         : line.replace(/^\d+\.\s+/, '');
       
-      processedLines.push(`<li>${content}</li>`);
+      // Apply special styling for Key Findings section
+      if (inKeyFindings) {
+        processedLines.push(`<li class="finding-item-card">${content}</li>`);
+      } else {
+        processedLines.push(`<li class="list-item-block">${content}</li>`);
+      }
     } else {
       // Close any open list
       if (inList) {
@@ -339,10 +481,151 @@ function renderMarkdown(markdown: string): string {
 }
 
 /**
+ * Debug function to log the structure of the report data
+ */
+function debugReportData(data: ScorecardData): void {
+  console.log('=== DEBUG REPORT DATA STRUCTURE ===');
+  console.log('User Information:', JSON.stringify(data.UserInformation, null, 2));
+  console.log('Score Information:', JSON.stringify(data.ScoreInformation, null, 2));
+  
+  console.log('Question Answer History length:', data.QuestionAnswerHistory?.length || 0);
+  if (data.QuestionAnswerHistory && data.QuestionAnswerHistory.length > 0) {
+    console.log('First question sample:', JSON.stringify(data.QuestionAnswerHistory[0], null, 2));
+    
+    // Group by phase to check what phases are available
+    const phases = data.QuestionAnswerHistory.reduce((acc, item) => {
+      const phase = item.phaseName || 'Uncategorized';
+      if (!acc[phase]) acc[phase] = 0;
+      acc[phase]++;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    console.log('Questions by phase:', phases);
+  }
+  
+  // Check if markdown content exists and log its structure
+  if (data.FullReportMarkdown) {
+    console.log('Full Report Markdown length:', data.FullReportMarkdown.length);
+    
+    // Log section headings to understand structure
+    const headings = data.FullReportMarkdown.match(/##\s+(.*?)$/gm);
+    if (headings) {
+      console.log('Markdown sections found:', headings);
+    }
+    
+    // Check for specific sections
+    const hasKeyFindings = data.FullReportMarkdown.includes('## Key Findings');
+    const hasStrengths = data.FullReportMarkdown.includes('Your Strengths') || 
+                        data.FullReportMarkdown.includes('**Strengths:**');
+    const hasWeaknesses = data.FullReportMarkdown.includes('Focus Areas') || 
+                         data.FullReportMarkdown.includes('Areas for Improvement') ||
+                         data.FullReportMarkdown.includes('**Weaknesses:**');
+    const hasDetailedAnalysis = data.FullReportMarkdown.includes('## Detailed Analysis');
+    const hasRecommendations = data.FullReportMarkdown.includes('## Recommendations');
+    const hasIllustrativeBenchmarks = data.FullReportMarkdown.includes('### Illustrative Benchmarks');
+    const hasLearningPath = data.FullReportMarkdown.includes('### Your Personalized AI Learning Path') ||
+                           data.FullReportMarkdown.includes('### Getting Started & Resources');
+    
+    console.log('Section presence check:', {
+      hasKeyFindings,
+      hasStrengths,
+      hasWeaknesses,
+      hasDetailedAnalysis, 
+      hasRecommendations,
+      hasIllustrativeBenchmarks,
+      hasLearningPath
+    });
+  }
+  
+  console.log('=== END DEBUG REPORT DATA STRUCTURE ===');
+}
+
+/**
+ * Ensure all sections from the markdown are included in the HTML
+ */
+function renderFullReportMarkdown(markdownContent: string): string {
+  if (!markdownContent) {
+    console.log('No markdown content provided to renderFullReportMarkdown');
+    return '';
+  }
+  
+  console.log('Rendering full report markdown...');
+  
+  // First, render the entire markdown to HTML
+  const fullHtml = renderMarkdown(markdownContent);
+  
+  // Replace the Final Score section with a styled version
+  const withStyledFinalScore = fullHtml.replace(
+    /## Final Score: \d+\/100/g, 
+    match => `<div class="final-score">${match}</div>`
+  );
+  
+  // Process Key Findings section
+  const withStyledKeyFindings = withStyledFinalScore.replace(
+    /## Key Findings([\s\S]*?)(?=##|$)/g, 
+    match => {
+      console.log('Found and styling Key Findings section');
+      return `<div class="key-findings-section"><h3>Key Findings</h3>${match.replace(/## Key Findings/, '')}</div>`;
+    }
+  );
+  
+  // Process Strengths and Focus Areas headings
+  const withStyledHeadings = withStyledKeyFindings
+    .replace(/### Your Strengths/g, '<h4>Your Strengths</h4>')
+    .replace(/### Focus Areas/g, '<h4>Focus Areas</h4>')
+    .replace(/### Areas for Improvement/g, '<h4>Areas for Improvement</h4>');
+  
+  // Process all list items to use the list-item-block class
+  const withStyledListItems = withStyledHeadings.replace(
+    /<li>([^<]+)<\/li>/g, 
+    match => {
+      const content = match.replace(/<\/?li>/g, '');
+      return `<li class="list-item-block">${content}</li>`;
+    }
+  );
+  
+  // Process special sections like Illustrative Benchmarks, Example Prompts, etc.
+  const specialSections = [
+    'Sample AI Goal-Setting Meeting Agenda',
+    'Example Prompts for Your Team',
+    'Illustrative Benchmarks',
+    'Personalized AI Learning Path',
+    'Getting Started & Resources',
+    'Your Learning Path & Resources',
+    'Recommendations',
+    'Detailed Analysis'
+  ];
+  
+  let processedHtml = withStyledListItems;
+  
+  specialSections.forEach(section => {
+    const sectionRegex = new RegExp(`### ${section}([\\s\\S]*?)(?=###|##|$)`, 'g');
+    processedHtml = processedHtml.replace(
+      sectionRegex,
+      match => {
+        console.log(`Found and styling section: ${section}`);
+        return `<div class="key-findings-section"><h3>${section}</h3>${match.replace(`### ${section}`, '')}</div>`;
+      }
+    );
+  });
+  
+  // Close any open sections
+  const finalHtml = processedHtml.replace(
+    /### ([^#]+?)(?=###|##|$)/g, 
+    match => `${match}</div>`
+  );
+  
+  return finalHtml;
+}
+
+/**
  * Generate the complete HTML for the scorecard PDF
  */
 export async function generateScorecardHTML(data: ScorecardData): Promise<string> {
-  const { UserInformation, ScoreInformation, FullReportMarkdown } = data;
+  const { UserInformation, ScoreInformation, FullReportMarkdown, QuestionAnswerHistory } = data;
+
+  // Debug the report data structure
+  debugReportData(data);
 
   // Define brand colors
   const colors = {
@@ -360,10 +643,6 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
     scoreBg: '#f1f3f5'
   };
 
-  // Remove the "Strategic Action Plan" section from the markdown for the details section
-  const strategicPlanRegex = /## Strategic Action Plan\s*([\s\S]*?)(?=##|$)/i;
-  const markdownForDetails = FullReportMarkdown.replace(strategicPlanRegex, '').trim();
-
   // Extract strengths and weaknesses (used for Focus Areas) from markdown
   const strengths = extractStrengths(FullReportMarkdown);
   const weaknesses = extractWeaknesses(FullReportMarkdown); // Using weaknesses for Focus Areas as per user feedback example
@@ -371,6 +650,10 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
   // Determine tier description
   const tierDescription = getTierDescription(ScoreInformation.AITier);
   
+  // Process the full markdown content for the details section
+  // We'll keep the Strategic Action Plan section in the markdown for now
+  const fullReportHtml = renderFullReportMarkdown(FullReportMarkdown);
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -393,15 +676,30 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
     }
 
     @page {
-      size: A4;
-      margin: 1.5cm;
+      size: A4 portrait;
+      margin: 2cm 1.5cm;
       @bottom-center {
-        content: "AI Efficiency Scorecard | Page " counter(page) " of " counter(pages);
+        content: "Page " counter(page) " of " counter(pages);
         font-family: 'Inter', sans-serif;
-        font-size: 8pt;
-        color: ${colors.textDark};
+        font-size: 9pt;
+        color: ${colors.textMuted};
         padding-top: 0.5cm;
         border-top: 1pt solid ${colors.lightMint};
+      }
+    }
+
+    #document-footer-content {
+      position: running(documentFooter);
+      text-align: center;
+      font-size: 8pt;
+      color: ${colors.textMuted};
+      font-family: 'Inter', sans-serif;
+    }
+
+    @page {
+      @bottom-left {
+        content: element(documentFooter);
+        padding-top: 0.5cm;
       }
     }
 
@@ -520,36 +818,116 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       margin-bottom: 15px;
     }
 
-    /* List Styles - Fixed to prevent empty boxes */
+    /* List Styles with Item Block Design */
     ul, ol {
       margin-bottom: 1em;
-      padding-left: 20px;
-    }
-
-    li {
-      margin-bottom: 8px;
-      line-height: 1.6;
-      font-family: 'Inter', sans-serif;
-      color: ${colors.textBody};
-    }
-
-    ul li {
-      position: relative;
-      padding-left: 1em;
+      padding-left: 0;
       list-style-type: none;
     }
 
+    li {
+      margin-bottom: 10px;
+      line-height: 1.6;
+      font-family: 'Inter', sans-serif;
+      color: ${colors.textBody};
+      list-style-type: none;
+    }
+
+    /* Universal Item Block Styling */
+    .list-item-block {
+      background-color: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-left: 4px solid ${colors.darkGreen};
+      padding: 12px 15px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      page-break-inside: avoid !important;
+      line-height: 1.6;
+      position: relative;
+      display: block;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    /* Finding Item Card - Same as list-item-block for consistency */
+    .finding-item-card {
+      background-color: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-left: 4px solid ${colors.darkGreen};
+      padding: 12px 15px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      page-break-inside: avoid !important;
+      line-height: 1.6;
+      font-family: 'Inter', sans-serif;
+      position: relative;
+      display: block;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    /* Green bullet styling for lists */
     ul li::before {
       content: '•';
       color: ${colors.darkGreen};
       font-weight: bold;
       position: absolute;
-      left: 0;
+      left: 4px;
     }
 
-    ol li {
-      list-style-position: outside;
-      padding-left: 0.5em;
+    /* Assessment Results Section - Findings */
+    .assessment-results-section .findings-container {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-top: 1.5em;
+    }
+
+    .assessment-results-section .strengths-section,
+    .assessment-results-section .focus-areas-section {
+      flex: 1;
+      padding: 15px;
+      border-radius: 6px;
+      background-color: ${colors.white};
+      border: 1px solid ${colors.cardBorder};
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+    }
+
+    .assessment-results-section .strengths-section h4,
+    .assessment-results-section .focus-areas-section h4 {
+      color: ${colors.textDark};
+      font-size: 12pt;
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-weight: bold;
+      text-align: center;
+      padding-bottom: 8px;
+      border-bottom: 1px solid ${colors.lightMint};
+    }
+
+    .assessment-results-section ul {
+      padding-left: 0;
+      margin: 0;
+    }
+
+    .assessment-results-section li {
+      margin-bottom: 8px;
+      line-height: 1.6;
+      font-family: 'Inter', sans-serif;
+      color: ${colors.textBody};
+      position: relative;
+      list-style-type: none;
+    }
+
+    /* Next Steps Summary - Green callout banner */
+    .assessment-results-section .next-steps-summary {
+      margin-top: 20px;
+      padding: 12px 15px;
+      background-color: ${colors.lightMint};
+      border-radius: 6px;
+      border-left: 4px solid ${colors.darkGreen};
+      font-style: italic;
+      color: ${colors.textDark};
+      font-size: 10pt;
+      page-break-inside: avoid;
     }
 
     /* Header */
@@ -557,11 +935,12 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       background-color: ${colors.lightGrey};
       border: 1px solid ${colors.borderGrey};
       border-left: 5px solid ${colors.darkGreen};
-      padding: 20px;
+      padding: 20px 25px;
       margin-bottom: 30px;
-      border-radius: 8px;
+      border-radius: 6px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
       text-align: center;
+      page-break-inside: avoid;
     }
 
     .main-header p {
@@ -586,10 +965,11 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
     .info-card {
       flex: 1;
       border: 1px solid ${colors.cardBorder};
-      border-radius: 8px;
+      border-radius: 6px;
       padding: 20px;
       background-color: ${colors.white};
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+      page-break-inside: avoid;
     }
 
     .info-card h3 {
@@ -618,7 +998,7 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       padding: 25px;
       background-color: ${colors.white};
       border: 1px solid ${colors.cardBorder};
-      border-radius: 8px;
+      border-radius: 6px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
       page-break-inside: avoid;
       text-align: center;
@@ -647,7 +1027,7 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       color: ${colors.darkGreen};
       margin: 10px 0;
       padding: 8px;
-      background-color: ${colors.lightMint};
+      background-color: #e6f7ee;
       border-radius: 6px;
       display: inline-block;
       min-width: 180px;
@@ -666,7 +1046,7 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       padding: 25px;
       background-color: ${colors.white};
       border: 1px solid ${colors.cardBorder};
-      border-radius: 8px;
+      border-radius: 6px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
       page-break-inside: avoid;
     }
@@ -694,76 +1074,13 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       page-break-inside: avoid;
     }
 
-    .assessment-results-section .findings-container {
-      display: flex;
-      justify-content: space-between;
-      gap: 20px;
-      margin-top: 1.5em;
-    }
-
-    .assessment-results-section .strengths-section,
-    .assessment-results-section .focus-areas-section {
-      flex: 1;
-      padding: 15px;
-      border-radius: 8px;
-      background-color: ${colors.white};
-      border: 1px solid ${colors.cardBorder};
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
-    }
-
-    .assessment-results-section .strengths-section h4,
-    .assessment-results-section .focus-areas-section h4 {
-      color: ${colors.textDark};
-      font-size: 12pt;
-      margin-top: 0;
-      margin-bottom: 10px;
-      font-weight: bold;
-      text-align: center;
-      padding-bottom: 8px;
-      border-bottom: 1px solid ${colors.lightMint};
-    }
-
-    .assessment-results-section ul {
-      padding-left: 20px;
-      margin: 0;
-    }
-
-    .assessment-results-section li {
-      margin-bottom: 8px;
-      line-height: 1.6;
-      font-family: 'Inter', sans-serif;
-      color: ${colors.textBody};
-      position: relative;
-      padding-left: 1em;
-      list-style-type: none;
-    }
-
-    .assessment-results-section li::before {
-      content: '•';
-      color: ${colors.darkGreen};
-      font-weight: bold;
-      position: absolute;
-      left: 0;
-    }
-
-    .assessment-results-section .next-steps-summary {
-      margin-top: 20px;
-      padding: 12px 15px;
-      background-color: ${colors.lightMint};
-      border-radius: 6px;
-      border-left: 4px solid ${colors.darkGreen};
-      font-style: italic;
-      color: ${colors.textDark};
-      font-size: 10pt;
-    }
-
     /* Strategic Action Plan Section */
     .action-plan-section {
       margin-bottom: 2em;
       padding: 25px;
       background-color: ${colors.white};
       border: 1px solid #e9ecef;
-      border-radius: 8px;
+      border-radius: 6px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
       page-break-inside: avoid;
     }
@@ -796,7 +1113,7 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       padding: 12px;
       background-color: #f8f9fa;
       border: 1px solid #dee2e6;
-      border-radius: 6px;
+      border-radius: 4px;
       border-left: 4px solid ${colors.darkGreen};
       display: flex;
       align-items: flex-start;
@@ -824,39 +1141,13 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       font-size: 10pt;
     }
 
-    .empty-plan-message {
-      padding: 15px;
-      background-color: ${colors.lightMint};
-      border-radius: 6px;
-      border-left: 4px solid ${colors.darkGreen};
-      margin: 15px 0;
-      font-size: 10pt;
-    }
-
-    .empty-plan-message p {
-      margin: 0;
-      color: ${colors.textDark};
-      font-style: italic;
-    }
-
-    /* Footer */
-    .footer {
-      text-align: center;
-      margin-top: 2em;
-      padding-top: 1em;
-      border-top: 1px solid ${colors.lightMint};
-      font-size: 8pt;
-      color: ${colors.textDark};
-      font-family: 'Inter', sans-serif;
-    }
-
     /* Assessment Q&A Section Styling */
     .qa-section {
       margin-bottom: 2em;
       padding: 25px;
       background-color: ${colors.white};
       border: 1px solid ${colors.cardBorder};
-      border-radius: 8px;
+      border-radius: 6px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
       page-break-inside: avoid;
       font-family: 'Inter', sans-serif;
@@ -883,11 +1174,6 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
 
     .qa-item {
       margin-bottom: 10px;
-      padding: 10px;
-      background-color: ${colors.white};
-      border: 1px solid ${colors.cardBorder};
-      border-radius: 4px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
       line-height: 1.6;
       font-size: 10pt;
     }
@@ -909,13 +1195,13 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       display: block;
     }
 
-    /* Fixed styling for content blocks within the main markdown section */
+    /* Full Report Markdown Section */
     .full-report-markdown-section {
       margin-bottom: 2em;
       padding: 25px;
       background-color: ${colors.white};
       border: 1px solid #e9ecef;
-      border-radius: 8px;
+      border-radius: 6px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
       page-break-inside: avoid;
     }
@@ -930,6 +1216,118 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       border-bottom: 2px solid ${colors.darkGreen};
     }
 
+    /* Final Score Styling - Make it stand out */
+    .final-score {
+      background-color: #f1f3f5;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-weight: bold;
+      display: inline-block;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      color: ${colors.textDark};
+    }
+
+    /* Key Findings section styling */
+    .key-findings-section {
+      background-color: ${colors.white};
+      border: 1px solid ${colors.cardBorder};
+      padding: 20px;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+      margin-bottom: 20px;
+      page-break-inside: avoid;
+    }
+
+    .key-findings-section h3 {
+      color: ${colors.textDark};
+      margin-top: 0;
+      margin-bottom: 15px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid ${colors.darkGreen};
+      font-size: 18pt;
+      font-weight: bold;
+      page-break-after: avoid;
+    }
+
+    .key-findings-section h4 {
+      color: ${colors.textDark};
+      margin-top: 15px;
+      margin-bottom: 12px;
+      font-weight: bold;
+      font-size: 14pt;
+      page-break-after: avoid;
+    }
+
+    /* Updated list styles for Key Findings */
+    .key-findings-section ul,
+    .key-findings-section ol {
+      list-style-type: none;
+      padding-left: 0;
+      margin-top: 10px;
+      margin-bottom: 15px;
+    }
+
+    .key-findings-section ul li,
+    .key-findings-section ol li {
+      margin-bottom: 12px;
+      page-break-inside: avoid !important;
+    }
+
+    .key-findings-section ul li::before {
+      content: none;
+    }
+
+    /* Print-Specific Styles */
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      .no-break {
+        page-break-inside: avoid !important;
+      }
+
+      h1, h2, h3, h4 {
+        page-break-after: avoid;
+        page-break-inside: avoid;
+      }
+
+      p {
+        orphans: 3;
+        widows: 3;
+      }
+    }
+
+    /* Empty plan message styling */
+    .empty-plan-message {
+      padding: 15px;
+      background-color: ${colors.lightMint};
+      border-radius: 6px;
+      border-left: 4px solid ${colors.darkGreen};
+      margin: 15px 0;
+      font-size: 10pt;
+    }
+
+    .empty-plan-message p {
+      margin: 0;
+      color: ${colors.textDark};
+      font-style: italic;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      margin-top: 2em;
+      padding-top: 1em;
+      border-top: 1px solid ${colors.lightMint};
+      font-size: 8pt;
+      color: ${colors.textDark};
+      font-family: 'Inter', sans-serif;
+    }
+    
+    /* Markdown content styling */
     .section-intro {
       margin-bottom: 15px;
       line-height: 1.6;
@@ -1008,106 +1406,6 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       margin-left: 20px;
       page-break-inside: avoid !important;
     }
-
-    /* Final Score Styling - Make it stand out */
-    .final-score {
-      background-color: #f1f3f5;
-      padding: 8px 12px;
-      border-radius: 4px;
-      font-weight: bold;
-      display: inline-block;
-      margin-top: 5px;
-      margin-bottom: 15px;
-      color: ${colors.textDark};
-    }
-
-    /* Key Findings section styling - Improved for WeasyPrint */
-    .key-findings-section {
-      background-color: ${colors.white};
-      border: 1px solid ${colors.cardBorder};
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
-      margin-bottom: 20px;
-      page-break-inside: avoid;
-    }
-
-    .key-findings-section h3 {
-      color: ${colors.textDark};
-      margin-top: 0;
-      margin-bottom: 15px;
-      padding-bottom: 8px;
-      border-bottom: 2px solid ${colors.darkGreen};
-      font-size: 18pt;
-      font-weight: bold;
-      page-break-after: avoid;
-    }
-
-    .key-findings-section h4 {
-      color: ${colors.textDark};
-      margin-top: 15px;
-      margin-bottom: 12px;
-      font-weight: bold;
-      font-size: 14pt;
-      page-break-after: avoid;
-    }
-
-    /* Finding Item Card - Styled for better WeasyPrint rendering */
-    .finding-item-card {
-      background-color: #f9f9f9;
-      border: 1px solid #ddd;
-      border-left: 4px solid ${colors.darkGreen};
-      padding: 15px;
-      margin-bottom: 12px;
-      border-radius: 4px;
-      page-break-inside: avoid !important;
-      line-height: 1.6;
-      font-family: 'Inter', sans-serif;
-      position: relative;
-      display: block;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-
-    /* Updated list styles for Key Findings */
-    .key-findings-section ul,
-    .key-findings-section ol {
-      list-style-type: none;
-      padding-left: 0;
-      margin-top: 10px;
-      margin-bottom: 15px;
-    }
-
-    .key-findings-section ul li,
-    .key-findings-section ol li {
-      margin-bottom: 12px;
-      page-break-inside: avoid !important;
-    }
-
-    .key-findings-section ul li::before {
-      content: none;
-    }
-
-    /* Print-Specific Styles */
-    @media print {
-      body {
-        margin: 0;
-        padding: 0;
-      }
-
-      .no-break {
-        page-break-inside: avoid !important;
-      }
-
-      h1, h2, h3, h4 {
-        page-break-after: avoid;
-        page-break-inside: avoid;
-      }
-
-      p {
-        orphans: 3;
-        widows: 3;
-      }
-    }
   </style>
 </head>
 <body>
@@ -1156,14 +1454,14 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       <div class="strengths-section">
         <h4>Your Strengths</h4>
         ${strengths.length > 0 ? `<ul>
-          ${strengths.map(strength => `<li class="finding-item-card">${strength}</li>`).join('\n')}
+          ${strengths.map(strength => `<li class="list-item-block">${strength}</li>`).join('\n')}
         </ul>` : '<p>No specific strengths were identified in the assessment.</p>'}
       </div>
       
       <div class="focus-areas-section">
         <h4>Focus Areas</h4>
         ${weaknesses.length > 0 ? `<ul>
-          ${weaknesses.map(weakness => `<li class="finding-item-card">${weakness}</li>`).join('\n')}
+          ${weaknesses.map(weakness => `<li class="list-item-block">${weakness}</li>`).join('\n')}
         </ul>` : '<p>No specific focus areas were identified in the assessment.</p>'}
       </div>
     </div>
@@ -1182,18 +1480,7 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
       Below is the complete content of your AI Efficiency Scorecard report:
     </p>
     <div class="markdown-content">
-      ${renderMarkdown(markdownForDetails)
-        .replace(/## Final Score: \d+\/100/, match => `<div class="final-score">${match}</div>`)
-        .replace(/## Key Findings([\s\S]*?)(?=##|$)/g, match => `<div class="key-findings-section"><h3>Key Findings</h3>${match.replace(/## Key Findings/, '')}</div>`)
-        .replace(/### Your Strengths/g, '<h4>Your Strengths</h4>')
-        .replace(/### Focus Areas/g, '<h4>Focus Areas</h4>')
-        .replace(/<li>([^<]+)<\/li>/g, match => {
-          const content = match.replace(/<\/?li>/g, '');
-          return `<li class="finding-item-card">${content}</li>`;
-        })
-        .replace(/### (Sample AI Goal-Setting Meeting Agenda|Example Prompts for Your Team|Illustrative Benchmarks|Personalized AI Learning Path)/g, match => `<div class="key-findings-section"><h3>${match.replace(/### /, '')}</h3>`)
-        .replace(/### ([^#]+?)(?=###|##|$)/g, match => `${match}</div>`)
-      }
+      ${fullReportHtml}
     </div>
   </div>
 
@@ -1205,18 +1492,27 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
     </p>
     
     <!-- Dynamic Strategic Action Plan -->
-    ${extractStrategicPlan(FullReportMarkdown).length > 0 ? `
-    <ul class="action-plan-list">
-      ${extractStrategicPlan(FullReportMarkdown).map((action, index) => `
-        <li class="action-item">
-          <span class="action-number">${index + 1}</span>
-          <span class="action-text">${action}</span>
-        </li>
-      `).join('\n')}
-    </ul>` : `
-    <div class="empty-plan-message">
-      <p>No strategic action plan items were found in the report markdown.</p>
-    </div>`}
+    ${(() => {
+      const actionItems = extractStrategicPlan(FullReportMarkdown);
+      console.log(`Rendering Strategic Action Plan with ${actionItems.length} items`);
+      
+      if (actionItems.length > 0) {
+        return `
+        <ul class="action-plan-list">
+          ${actionItems.map((action, index) => `
+            <li class="action-item">
+              <span class="action-number">${index + 1}</span>
+              <span class="action-text">${action}</span>
+            </li>
+          `).join('\n')}
+        </ul>`;
+      } else {
+        return `
+        <div class="empty-plan-message">
+          <p>No strategic action plan items were found in the report markdown.</p>
+        </div>`;
+      }
+    })()}
   </div>
 
   <!-- Assessment Q&A Section -->
@@ -1225,27 +1521,37 @@ export async function generateScorecardHTML(data: ScorecardData): Promise<string
     <p class="section-intro">
       Here are the questions you were asked and your responses during the AI Efficiency Scorecard assessment:
     </p>
-    ${Object.entries(groupByPhase(data.QuestionAnswerHistory)).length > 0 ? 
-      Object.entries(groupByPhase(data.QuestionAnswerHistory)).map(([phase, questions]) => `
-      <div class="qa-phase">
-        <h3>${phase}</h3>
-        ${questions.map(item => `
-          <div class="qa-item">
-            <p class="question"><strong>Q:</strong> ${item.question}</p>
-            <p class="answer"><strong>A:</strong> ${formatAnswer(item)}</p>
+    ${QuestionAnswerHistory && QuestionAnswerHistory.length > 0 ? 
+      (() => {
+        console.log(`Rendering Q&A section with ${QuestionAnswerHistory.length} items`);
+        const groupedByPhase = groupByPhase(QuestionAnswerHistory);
+        return Object.entries(groupedByPhase).map(([phase, questions]) => `
+          <div class="qa-phase">
+            <h3>${phase}</h3>
+            ${questions.map(item => {
+              console.log(`Rendering Q&A item: ${item.question.substring(0, 30)}...`);
+              return `
+                <div class="qa-item list-item-block">
+                  <p class="question"><strong>Q:</strong> ${item.question}</p>
+                  <p class="answer"><strong>A:</strong> ${formatAnswer(item)}</p>
+                </div>
+              `;
+            }).join('\n')}
           </div>
-        `).join('\n')}
-      </div>
-    `).join('\n') : `
-    <div class="empty-plan-message">
-      <p>No question and answer history available for this report.</p>
-    </div>`}
+        `).join('\n');
+      })() : `
+      <div class="empty-plan-message">
+        <p>No question and answer history available for this report.</p>
+      </div>`
+    }
   </div>
   
   <!-- Footer -->
   <div class="footer">
-    <p>AI Efficiency Scorecard | Generated for ${UserInformation.UserName} at ${UserInformation.CompanyName}</p>
-    <p>© ${new Date().getFullYear()} - All Rights Reserved</p>
+    <div id="document-footer-content">
+      Generated by Social Garden for ${UserInformation.UserName} at ${UserInformation.CompanyName}
+      <br/>© ${new Date().getFullYear()} Social Garden - All Rights Reserved
+    </div>
   </div>
   </div> <!-- Close container -->
 </body>

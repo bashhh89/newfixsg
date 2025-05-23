@@ -22,7 +22,7 @@ async function fetchReportData(reportId: string): Promise<ScorecardData> {
     }
     
     const reportData = reportSnapshot.data();
-    console.log("Fetched Firestore report data:", reportData);
+    console.log("Fetched Firestore report data keys:", Object.keys(reportData));
 
     // Extract data with fallbacks, prioritizing lead form field names
     const userInformation = {
@@ -38,14 +38,56 @@ async function fetchReportData(reportId: string): Promise<ScorecardData> {
       ReportID: reportId
     };
 
-    const questionAnswerHistory = reportData.QuestionAnswerHistory || reportData.answers || [];
+    // Enhanced extraction for QuestionAnswerHistory with better fallbacks
+    let questionAnswerHistory = [];
+    
+    // Try to get question answer history from all possible locations
+    if (Array.isArray(reportData.QuestionAnswerHistory) && reportData.QuestionAnswerHistory.length > 0) {
+      questionAnswerHistory = reportData.QuestionAnswerHistory;
+    } else if (Array.isArray(reportData.questionAnswerHistory) && reportData.questionAnswerHistory.length > 0) {
+      questionAnswerHistory = reportData.questionAnswerHistory;
+    } else if (Array.isArray(reportData.answers) && reportData.answers.length > 0) {
+      questionAnswerHistory = reportData.answers;
+    }
+    
+    console.log("Question Answer History source:", 
+      Array.isArray(reportData.QuestionAnswerHistory) ? "QuestionAnswerHistory" : 
+      Array.isArray(reportData.questionAnswerHistory) ? "questionAnswerHistory" : 
+      Array.isArray(reportData.answers) ? "answers" : "No valid source found");
+    
     const fullReportMarkdown = reportData.FullReportMarkdown || reportData.markdown || reportData.reportMarkdown || '';
 
     // Debug the markdown content
     console.log("Markdown content length:", fullReportMarkdown.length);
     console.log("Markdown first 100 chars:", fullReportMarkdown.substring(0, 100));
+    
+    // Debug question answer history
+    console.log("Question Answer History length:", questionAnswerHistory.length);
+    if (questionAnswerHistory.length > 0) {
+      console.log("First question sample:", JSON.stringify(questionAnswerHistory[0], null, 2));
+      
+      // Group by phase to check what phases are available
+      const phases = questionAnswerHistory.reduce((acc: Record<string, number>, item: any) => {
+        const phase = item.phaseName || 'Uncategorized';
+        if (!acc[phase]) acc[phase] = 0;
+        acc[phase]++;
+        return acc;
+      }, {});
+      
+      console.log("Questions by phase:", phases);
+    }
+    
+    // Check for key sections in the markdown
     console.log("Contains 'Strategic Action Plan':", fullReportMarkdown.includes('Strategic Action Plan'));
     console.log("Contains '## Strategic Action Plan':", fullReportMarkdown.includes('## Strategic Action Plan'));
+    console.log("Contains 'Key Findings':", fullReportMarkdown.includes('Key Findings'));
+    console.log("Contains 'Your Strengths':", fullReportMarkdown.includes('Your Strengths'));
+    console.log("Contains 'Focus Areas':", fullReportMarkdown.includes('Focus Areas'));
+    console.log("Contains 'Areas for Improvement':", fullReportMarkdown.includes('Areas for Improvement'));
+    console.log("Contains 'Detailed Analysis':", fullReportMarkdown.includes('Detailed Analysis'));
+    console.log("Contains 'Recommendations':", fullReportMarkdown.includes('Recommendations'));
+    console.log("Contains 'Illustrative Benchmarks':", fullReportMarkdown.includes('Illustrative Benchmarks'));
+    console.log("Contains 'Learning Path':", fullReportMarkdown.includes('Learning Path'));
     
     // If the Strategic Action Plan section exists, log it
     const strategicPlanMatch = fullReportMarkdown.match(/## Strategic Action Plan\s*([\s\S]*?)(?=##|$)/i);

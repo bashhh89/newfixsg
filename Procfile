@@ -1,2 +1,2 @@
 web: npm start
-release: pnpm install --no-frozen-lockfile 
+release: npm install --legacy-peer-deps 

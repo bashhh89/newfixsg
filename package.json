@@ -7,7 +7,7 @@
     "dev": "cross-env next dev -p 3006",
     "dev:windows": "powershell -Command \"next dev -p 3006\"",
     "build": "node build-production.js",
-    "start": "next start -p 3006",
+    "start": "next start -p ${PORT:-3006}",
     "lint": "next lint",
     "test-pdf": "node test-pdf-generation.js",
     "verify": "node verify-deploy-readiness.js",

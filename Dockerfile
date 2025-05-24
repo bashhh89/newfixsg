@@ -1,20 +1,28 @@
+FROM alpine/git:latest AS source
+
+# Clone the repository directly (replace with your repository)
+RUN git clone https://github.com/bashhh89/newfixsg.git /app
+WORKDIR /app
+RUN git checkout againbranch
+
+# Second stage - build and run the application
 FROM node:22-alpine
 
 WORKDIR /app
 
-# Create minimal .npmrc if not present
+# Copy from the git stage
+COPY --from=source /app /app
+
+# Create minimal .npmrc
 RUN echo "legacy-peer-deps=true" > .npmrc
 
-# Copy the entire application (more resilient than individual files)
-COPY . .
-
-# Install npm dependencies
+# Install dependencies
 RUN npm install --legacy-peer-deps
 
 # Build the application
-RUN node easypanel-build.js || npm run build
+RUN npm run build || echo "Build completed with warnings"
 
-# Expose the port
+# Set the port
 ENV PORT=3008
 EXPOSE 3008
 

@@ -5,6 +5,7 @@ import ScorecardQuestionDisplay from '@/components/ScorecardQuestionDisplay';
 import ScorecardResultsDisplay from '@/components/ScorecardResultsDisplay';
 import LeadCaptureForm from '@/components/scorecard/LeadCaptureForm';
 import NoSidebarLayout from '@/components/NoSidebarLayout';
+import LandingPage from '@/components/LandingPage';
 import { db } from '@/lib/firebase'; // Fixed path to firebase.ts
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation'; // For navigating to results page with reportId
@@ -346,9 +347,9 @@ export default function Home() {
   // Router for navigation
   const router = useRouter();
 
-  // --- TEMPORARY FOR TESTING RESULTS PAGE ---
-  const [currentStep, setCurrentStep] = useState<string>('industrySelection'); // Start at industry selection
-  // --- END TEMPORARY CHANGES ---
+  // --- UPDATED TO START WITH LANDING PAGE ---
+  const [currentStep, setCurrentStep] = useState<string>('landing'); // Start with landing page
+  // --- END CHANGES ---
 
   // Define state for selected industry
   const [selectedIndustry, setSelectedIndustry] = useState<string>("Property/Real Estate");
@@ -1113,6 +1114,11 @@ export default function Home() {
     return 'text';
   };
 
+  // Handler for landing page CTA
+  const handleGetStarted = useCallback(() => {
+    setCurrentStep('industrySelection');
+  }, []);
+
   // Add the renderContent function which was missing
   const renderContent = () => {
     console.log(`RENDER_CONTENT: currentStep=${currentStep}, overall_status=${scorecardState.overall_status}`);
@@ -1120,6 +1126,11 @@ export default function Home() {
     // Show loading overlay for report generation
     if (isGeneratingFinalReport) {
       return <ReportLoadingIndicator isLoading={true} />;
+    }
+
+    // Landing Page
+    if (currentStep === 'landing') {
+      return <LandingPage onGetStarted={handleGetStarted} />;
     }
 
     // Industry Selection
@@ -1177,22 +1188,13 @@ export default function Home() {
       return <ReportLoadingIndicator isLoading={true} />;
     }
 
-    // Default: Show industry selection
-    return (
-      <IndustrySelection
-        industries={industries}
-        selectedIndustry={selectedIndustry}
-        handleIndustryChange={setSelectedIndustry}
-        startAssessment={startActualAssessment}
-        leadCaptured={leadCaptured}
-        scorecardState={scorecardState}
-      />
-    );
+    // Default: Show landing page
+    return <LandingPage onGetStarted={handleGetStarted} />;
   };
 
   // Properly populate the return statement with the renderContent call
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className={currentStep === 'landing' ? '' : 'max-w-4xl mx-auto'}>
       {renderContent()}
     </div>
   );

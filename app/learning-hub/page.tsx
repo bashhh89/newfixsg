@@ -1563,7 +1563,7 @@ export default function LearningHubPage() {
       setIsClient(true);
     }
   }, []);
-  
+
   // Set user tier from query parameters if available
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -1614,7 +1614,7 @@ export default function LearningHubPage() {
       </div>
     </div>
   );
-  
+
   // --- Prompt Library State ---
   const [selectedPromptTier, setSelectedPromptTier] = useState<'All' | 'Dabbler' | 'Enabler' | 'Leader'>('All');
   const [selectedPromptCategory, setSelectedPromptCategory] = useState<string>('All');

@@ -25,6 +25,11 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "Social Garden AI Efficiency Scorecard",
   description: "Assess your organization's AI maturity and get personalized recommendations",
+  icons: {
+    icon: '/sg-favicon.svg',
+    shortcut: '/sg-favicon.svg',
+    apple: '/sg-favicon.svg',
+  },
 };
 
 export default function RootLayout({
@@ -35,6 +40,9 @@ export default function RootLayout({
   return (
     // Removed Geist variables from html className
     <html lang="en" className={`${plusJakartaSans.variable}`}>
+      <head>
+        <link rel="icon" href="/sg-favicon.svg" type="image/svg+xml" />
+      </head>
       <body className="font-plus-jakarta bg-sg-light-mint min-h-screen">
         {children}
       </body>

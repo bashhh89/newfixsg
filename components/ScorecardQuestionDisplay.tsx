@@ -294,7 +294,7 @@ const ScorecardQuestionDisplay: React.FC<ScorecardQuestionDisplayProps> = ({
     }
   }, [isAutoCompleting, question, answerType]);
   
-  // Single-step auto-answer and submit using Groq API
+  // Single-step auto-answer and submit using AI providers
   const handleSingleAutoAnswerAndSubmit = async () => {
     if (!isAutoCompleting || isLoadingLocally) return;
     
@@ -312,7 +312,7 @@ const ScorecardQuestionDisplay: React.FC<ScorecardQuestionDisplayProps> = ({
     
     try {
       // Construct system prompt for the AI
-      const groqSystemPrompt = `You are simulating the responses of a ${testPersonaTier} tier organization in the ${industry} industry taking an AI maturity assessment. 
+      const systemPrompt = `You are simulating the responses of a ${testPersonaTier} tier organization in the ${industry} industry taking an AI maturity assessment. 
 Based on the question type and content, provide a realistic answer that reflects the typical AI adoption level, tools, processes, and challenges of a ${testPersonaTier.toLowerCase()} organization.
 
 ${testPersonaTier === 'Dabbler' ? 
@@ -335,48 +335,75 @@ Provide a realistic answer for a ${testPersonaTier} tier organization in the ${i
 
       console.log("Auto-answer persona:", testPersonaTier);
       
-      // First try Groq API
+      // First try the dedicated auto-answer API endpoint
       try {
-        const groqResponse = await fetch('/api/groq', {
+        console.log(">>> FRONTEND: Sending request to auto-answer API");
+        const response = await fetch('/api/auto-answer', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            system: groqSystemPrompt,
             prompt: userPrompt,
+            systemPrompt,
+            maxTokens: 200,
           }),
         });
 
-        if (!groqResponse.ok) {
-          throw new Error(`Groq API error: ${groqResponse.status}`);
+        const responseData = await response.json();
+        
+        if (!response.ok) {
+          const errorMsg = responseData.error || `Error ${response.status}`;
+          console.error(">>> FRONTEND: Auto-answer API error:", errorMsg, responseData);
+          
+          // If the error indicates missing API keys, show a clear message to the user
+          if (responseData.missingKeys) {
+            setAutoCompleteError(`Auto-complete requires API keys. Please configure GOOGLE_API_KEY in .env.local file.`);
+            setIsAutoCompleting(false);
+            setIsLoadingLocally(false);
+            return;
+          }
+          
+          throw new Error(errorMsg);
         }
 
-        const groqData = await groqResponse.json();
-        if (groqData && groqData.content) {
-          simulatedPersonaAnswer = groqData.content.trim();
-          currentAnswerSource = 'Groq Llama 3 8B';
+        if (responseData && responseData.result) {
+          simulatedPersonaAnswer = responseData.result.trim();
+          
+          // Set the answer source based on which provider was used
+          if (responseData.provider && responseData.provider.includes('Pollinations')) {
+            currentAnswerSource = 'Pollinations Fallback';
+          } else if (responseData.provider && responseData.provider.includes('Google')) {
+            currentAnswerSource = 'Groq Llama 3 8B'; // We're using this for Google to maintain compatibility
+          } else {
+            currentAnswerSource = 'Manual';
+          }
+          
+          console.log(`>>> FRONTEND: Auto-answer provided by: ${responseData.provider}`);
         } else {
-          throw new Error('No content in Groq response');
+          throw new Error('No result in auto-answer response');
         }
-      } catch (groqError) {
-        console.warn('Groq API error, falling back to Pollinations:', groqError);
-
+      } catch (error: any) {
+        console.error('>>> FRONTEND: Auto-answer API failed:', error);
+        
+        // Fallback to direct Pollinations API call if our endpoint fails
         try {
-          // Fallback to Pollinations API
+          console.log(">>> FRONTEND: Auto-answer API failed, trying direct Pollinations call");
           const pollinationsResponse = await fetch('https://text.pollinations.ai/openai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               model: "openai-large",
               messages: [
-                { role: "system", content: groqSystemPrompt },
+                { role: "system", content: systemPrompt },
                 { role: "user", content: userPrompt },
               ],
               temperature: 0.7,
-              max_tokens: 200,
+              max_tokens: 200
             }),
           });
 
           if (!pollinationsResponse.ok) {
+            const errorText = await pollinationsResponse.text();
+            console.error(`>>> FRONTEND: Pollinations API error: ${pollinationsResponse.status}. Response: ${errorText.substring(0, 200)}`);
             throw new Error(`Pollinations API error: ${pollinationsResponse.status}`);
           }
 
@@ -384,13 +411,16 @@ Provide a realistic answer for a ${testPersonaTier} tier organization in the ${i
           if (pollinationsData && pollinationsData.choices && pollinationsData.choices[0]?.message?.content) {
             simulatedPersonaAnswer = pollinationsData.choices[0].message.content.trim();
             currentAnswerSource = 'Pollinations Fallback';
+            console.log(">>> FRONTEND: Successfully generated answer using direct Pollinations call");
           } else {
             throw new Error('No content in Pollinations response');
           }
-        } catch (pollinationsError) {
-          console.error('Both Groq and Pollinations APIs failed:', pollinationsError);
-          // Fall back to hardcoded answers
-          throw pollinationsError; // This will trigger the catch block below
+        } catch (pollError: any) {
+          console.error('>>> FRONTEND: Direct Pollinations call also failed:', pollError);
+          setAutoCompleteError(`Auto-answer generation failed: ${error.message}. Please ensure you have configured the required API keys.`);
+          setIsAutoCompleting(false);
+          setIsLoadingLocally(false);
+          return;
         }
       }
       
@@ -407,8 +437,9 @@ Provide a realistic answer for a ${testPersonaTier} tier organization in the ${i
           setIsLoadingLocally(false);
         }
       }, 500);
-    } catch (error) {
-      setAutoCompleteError('AI answer generation failed.');
+    } catch (error: any) {
+      console.error('>>> FRONTEND: All auto-answer attempts failed:', error);
+      setAutoCompleteError(`AI answer generation failed: ${error.message}. Please check your API keys configuration.`);
       setIsAutoCompleting(false);
       setIsLoadingLocally(false);
     }

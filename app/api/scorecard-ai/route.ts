@@ -1356,3 +1356,11 @@ function verifyTierCalculation() {
     }
   }
 }
+
+// Add GET handler to prevent 404 errors
+export async function GET() {
+  return NextResponse.json(
+    { error: 'This endpoint requires a POST request with proper parameters' },
+    { status: 404 }
+  );
+}

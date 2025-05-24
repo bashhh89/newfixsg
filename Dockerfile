@@ -2,18 +2,17 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json ./
-COPY .npmrc ./
+# Create minimal .npmrc if not present
+RUN echo "legacy-peer-deps=true" > .npmrc
+
+# Copy the entire application (more resilient than individual files)
+COPY . .
 
 # Install npm dependencies
 RUN npm install --legacy-peer-deps
 
-# Copy the rest of the application
-COPY . .
-
 # Build the application
-RUN node easypanel-build.js
+RUN node easypanel-build.js || npm run build
 
 # Expose the port
 ENV PORT=3000

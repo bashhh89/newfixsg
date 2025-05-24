@@ -1236,13 +1236,15 @@ export default function NewResultsPage({ initialUserName }: NewResultsPageProps 
                         onGeneratePDF={handlePresentationPdf}
                         isLoading={isPresentationPdfLoading}
                         className="btn-primary-divine bg-[#20E28F] text-[#103138] hover:bg-[#20E28F]/90"
-                      />
+                      >
+                        Download PDF 1
+                      </PresentationPDFButton>
                       {/* WeasyPrint PDF button */}
                       <WeasyprintPDFButton 
                         scorecardData={formatReportDataForPDF()}
                         className="btn-primary-divine bg-[#FEC401] text-[#103138] hover:bg-[#FEC401]/90"
                       >
-                        WeasyPrint PDF
+                        Download PDF 2
                       </WeasyprintPDFButton>
                     </div>
                   </div>

@@ -206,6 +206,101 @@ export default function NewResultsPage() {
   // Extract industry from question-answer history
   const extractIndustryFromHistory = (history: any[]): string | null => {
     if (!history || !history.length) return null;
+    
+    // Attempt to find industry-related questions and answers
+    try {
+      for (const item of history) {
+        if (item.question && typeof item.question === 'string') {
+          const question = item.question.toLowerCase();
+          if (question.includes('industry') || question.includes('sector') || question.includes('field')) {
+            // Found an industry-related question, extract from the answer
+            if (item.answer && typeof item.answer === 'string') {
+              const answer = item.answer;
+              // Simple extraction logic - take the first sentence
+              const firstSentence = answer.split('.')[0];
+              if (firstSentence && firstSentence.length > 5) {
+                console.log('EXTRACT INDUSTRY: Found from QA history:', firstSentence.trim());
+                return firstSentence.trim();
+              }
+            }
+          }
+        }
+      }
+      console.log('EXTRACT INDUSTRY: No relevant industry info found in QA history');
+      return null;
+    } catch (e) {
+      console.warn('Error extracting industry from history:', e);
+      return null;
+    }
+  };
+
+  // Load report data on initial render
+  useEffect(() => {
+    async function fetchReportData() {
+      console.log('RESULTS PAGE: Fetching report data');
+      
+      try {
+        // Get report ID from URL parameters
+        const reportIdParam = searchParams?.get('reportId');
+        setReportId(reportIdParam || null);
+        
+        if (!reportIdParam) {
+          throw new Error('No report ID provided in URL parameters');
+        }
+        
+        console.log('RESULTS PAGE: Fetching report with ID', reportIdParam);
+        
+        // Fetch report data from Firestore
+        const reportRef = doc(db, 'scorecard-reports', reportIdParam);
+        const reportDoc = await getDoc(reportRef);
+        
+        if (!reportDoc.exists()) {
+          throw new Error(`Report with ID ${reportIdParam} not found`);
+        }
+        
+        const reportData = reportDoc.data();
+        const markdownContent = reportData.reportMarkdown || reportData.report || null;
+        const history = reportData.questionAnswerHistory || [];
+        
+        console.log('RESULTS PAGE: Report data loaded successfully');
+        
+        // Set state with fetched data
+        setReportMarkdown(markdownContent);
+        setQuestionAnswerHistory(history);
+        
+        // Extract tier from markdown
+        if (markdownContent) {
+          const tier = extractTierFromMarkdown(markdownContent);
+          if (tier) {
+            console.log('RESULTS PAGE: Found tier:', tier);
+            setUserTier(tier);
+            
+            // Store tier in sessionStorage for later use
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('scorecardUserTier', tier);
+            }
+          } else {
+            console.warn('RESULTS PAGE: Could not determine tier from report');
+          }
+          
+          // Extract user's industry
+          const industry = extractIndustryFromMarkdown(markdownContent) || 
+                          extractIndustryFromHistory(history) || 
+                          'General Business';
+          setUserIndustry(industry);
+          
+          // Extract strengths, weaknesses and action items
+          try {
+            const extractedStrengths = extractStrengthsFromMarkdown(markdownContent);
+            setStrengths(extractedStrengths);
+            
+            const extractedWeaknesses = extractWeaknessesFromMarkdown(markdownContent);
+            setWeaknesses(extractedWeaknesses);
+            
+            const extractedActions = extractActionsFromMarkdown(markdownContent);
+            setActionItems(extractedActions);
+          } catch (innerError) {
+            console.warn('RESULTS PAGE: Non-critical error extracting insights:', innerError);
             // Non-critical error, don't throw
           }
         }
@@ -230,7 +325,7 @@ export default function NewResultsPage() {
       }
     }
     
-      fetchReportData();
+    fetchReportData();
   }, [searchParams]); // Only re-run if searchParams changes
 
   // Handle lead capture success
@@ -248,72 +343,6 @@ export default function NewResultsPage() {
   };
 
   // Helper functions to extract data from markdown
-  const extractTierFromMarkdown = (markdown: string | null): string | null => {
-    if (!markdown) return null;
-    
-    console.log('EXTRACT TIER: Extracting tier from markdown');
-    
-    // First try to find the specific "Overall Tier" heading
-    const tierMatch = markdown.match(/## Overall Tier:?\s*(.+?)($|\n)/i);
-    if (tierMatch && tierMatch[1]) {
-      const extracted = tierMatch[1].trim();
-      console.log('EXTRACT TIER: Found tier via "Overall Tier" heading:', extracted);
-      return extracted;
-    }
-    
-    // Next, try to find tier mentioned after "Overall" heading
-    const overallMatch = markdown.match(/## Overall:?\s*(.+?)($|\n)/i);
-    if (overallMatch && overallMatch[1]) {
-      const line = overallMatch[1].trim();
-      // Look for Leader, Enabler, or Dabbler in this line
-      if (line.includes('Leader') || line.includes('leader')) return 'Leader';
-      if (line.includes('Enabler') || line.includes('enabler')) return 'Enabler';
-      if (line.includes('Dabbler') || line.includes('dabbler')) return 'Dabbler';
-    }
-    
-    // If not found yet, try looking for the terms with specific formatting
-    const leaderBoldMatch = markdown.match(/\*\*Leader\*\*/i) || markdown.match(/__Leader__/i);
-    if (leaderBoldMatch) {
-      console.log('EXTRACT TIER: Found tier via bold "Leader" format');
-      return 'Leader';
-    }
-    
-    const enablerBoldMatch = markdown.match(/\*\*Enabler\*\*/i) || markdown.match(/__Enabler__/i);
-    if (enablerBoldMatch) {
-      console.log('EXTRACT TIER: Found tier via bold "Enabler" format');
-      return 'Enabler';
-    }
-    
-    const dabblerBoldMatch = markdown.match(/\*\*Dabbler\*\*/i) || markdown.match(/__Dabbler__/i);
-    if (dabblerBoldMatch) {
-      console.log('EXTRACT TIER: Found tier via bold "Dabbler" format');
-      return 'Dabbler';
-    }
-    
-    // Fallback to searching for Leader, Enabler, or Dabbler anywhere in the markdown
-    // Looking for most frequent tier mentioned
-    const leaderCount = (markdown.match(/Leader/gi) || []).length;
-    const enablerCount = (markdown.match(/Enabler/gi) || []).length;
-    const dabblerCount = (markdown.match(/Dabbler/gi) || []).length;
-    
-    console.log('EXTRACT TIER: Term frequency -', { leaderCount, enablerCount, dabblerCount });
-    
-    if (leaderCount > enablerCount && leaderCount > dabblerCount && leaderCount > 0) {
-      console.log('EXTRACT TIER: Found tier via frequency of "Leader"');
-      return 'Leader';
-    } else if (enablerCount > leaderCount && enablerCount > dabblerCount && enablerCount > 0) {
-      console.log('EXTRACT TIER: Found tier via frequency of "Enabler"');
-      return 'Enabler';
-    } else if (dabblerCount > 0) {
-      console.log('EXTRACT TIER: Found tier via frequency of "Dabbler"');
-      return 'Dabbler';
-    }
-    
-    // If we still can't determine, return "Enabler" as a default
-    console.log('EXTRACT TIER: Could not determine tier from markdown content, using default "Enabler"');
-    return 'Enabler';
-  };
-  
   const extractStrengthsFromMarkdown = (markdown: string): string[] => {
     console.log('EXTRACT STRENGTHS: Extracting strengths from markdown');
     
@@ -621,3 +650,27 @@ export default function NewResultsPage() {
       // Programmatically click the PDF download button if needed
       const downloadButton = document.getElementById('pdf-download-button');
       if (downloadButton) {
+        (downloadButton as HTMLButtonElement).click();
+      } else {
+        throw new Error('Download button not found');
+      }
+    } catch (error) {
+      console.error('PDF download error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF. Please try again later.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
+  // Render the main results page UI
+  return (
+    <ToastProvider>
+      {/* Component UI rendering code here */}
+      <div>Results page component rendering</div>
+    </ToastProvider>
+  );
+}

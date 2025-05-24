@@ -2,6 +2,7 @@
   "name": "sg-ready-pdf",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@8.15.4",
   "scripts": {
     "predev": "npx kill-port 3006",
     "dev": "cross-env next dev -p 3006",

@@ -9,7 +9,7 @@
     "dev:windows": "powershell -Command \"next dev -p 3006\"",
     "prebuild": "npm install --legacy-peer-deps",
     "build": "node easypanel-build.js",
-    "start": "next start -p ${PORT:-3006}",
+    "start": "next start -p ${PORT:-3008}",
     "lint": "next lint",
     "test-pdf": "node test-pdf-generation.js",
     "verify": "node verify-deploy-readiness.js",

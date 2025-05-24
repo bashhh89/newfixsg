@@ -13,7 +13,8 @@
     "test-pdf": "node test-pdf-generation.js",
     "verify": "node verify-deploy-readiness.js",
     "deploy:prepare": "pnpm install --frozen-lockfile=false && pnpm run build && pnpm run verify",
-    "deploy:pm2": "setup-pm2-production.bat"
+    "deploy:pm2": "setup-pm2-production.bat",
+    "deploy:env": "node deploy-env-setup.js"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "6.7.2",

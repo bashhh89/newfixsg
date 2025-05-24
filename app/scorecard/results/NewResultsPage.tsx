@@ -282,6 +282,11 @@ export default function NewResultsPage({ initialUserName }: NewResultsPageProps 
       
       // Store the name in multiple places for redundancy
       if (typeof window !== 'undefined') {
+        const companyName = sessionStorage.getItem('scorecardLeadCompany') || 
+                           localStorage.getItem('scorecardLeadCompany');
+        const email = sessionStorage.getItem('scorecardLeadEmail') || 
+                     localStorage.getItem('scorecardLeadEmail');
+                
         sessionStorage.setItem('scorecardUserName', capturedName.trim());
         sessionStorage.setItem('scorecardLeadName', capturedName.trim());
         localStorage.setItem('scorecardUserName', capturedName.trim());
@@ -293,11 +298,13 @@ export default function NewResultsPage({ initialUserName }: NewResultsPageProps 
             updateDoc(reportRef, {
               userName: capturedName.trim(),
               leadName: capturedName.trim(),
+              companyName: companyName || userIndustry || '',
+              email: email || '',
               updatedAt: new Date()
             }).then(() => {
-              console.log("RESULTS PAGE: Successfully updated report with user name");
+              console.log("RESULTS PAGE: Successfully updated report with user info");
             }).catch(err => {
-              console.error("RESULTS PAGE: Error updating report with user name:", err);
+              console.error("RESULTS PAGE: Error updating report with user info:", err);
             });
           } catch (err) {
             console.error("RESULTS PAGE: Error updating Firestore:", err);
@@ -754,18 +761,44 @@ export default function NewResultsPage({ initialUserName }: NewResultsPageProps 
         hasEmail: !!reportData.userInformation?.email
       });
       
-      // Extract user information with proper fallbacks
+      // Get company name from all possible sources
+      let companyName = null;
+      
+      // Try to get from Firestore first
       const userInfo = reportData.userInformation || {};
-      const companyName = userInfo.companyName || reportData.companyName || "Company Not Provided"; // Use actual company name from data
-      const email = userInfo.email || reportData.email || "ahmadbasheerr@gmail.com"; // Use actual email from data
+      if (userInfo.companyName) {
+        companyName = userInfo.companyName;
+      } else if (reportData.companyName) {
+        companyName = reportData.companyName;
+      }
+      
+      // If not in Firestore, check session/local storage
+      if (!companyName && typeof window !== 'undefined') {
+        companyName = sessionStorage.getItem('scorecardLeadCompany') || 
+                     localStorage.getItem('scorecardLeadCompany');
+      }
+      
+      // Fallback to industry if we still don't have a company name
+      if (!companyName) {
+        companyName = userIndustry || "Company";
+      }
+      
+      // Get email with fallbacks
+      const email = userInfo.email || 
+                  reportData.email || 
+                  sessionStorage.getItem('scorecardLeadEmail') || 
+                  localStorage.getItem('scorecardLeadEmail') || 
+                  "user@example.com";
+      
+      console.log("PRESENTATION PDF: Using company name:", companyName);
       
       // Format the report data for the PDF with correct company name and email
       const pdfReportData = {
         UserInformation: {
           Industry: userIndustry || reportData.industry || 'Property/Real Estate',
           UserName: userName || reportData.userName || 'Ahmad Basheer',
-          CompanyName: companyName, // Use the actual company name, not industry
-          Email: email // Use the actual email, not a placeholder
+          CompanyName: companyName,
+          Email: email
         },
         ScoreInformation: {
           AITier: userTier || reportData.tier || reportData.userAITier || 'Enabler',
@@ -773,7 +806,7 @@ export default function NewResultsPage({ initialUserName }: NewResultsPageProps 
           ReportID: reportId
         },
         QuestionAnswerHistory: questionAnswerHistory || reportData.questionAnswerHistory || [],
-        FullReportMarkdown: reportMarkdown || reportData.reportMarkdown || ''
+        FullReportMarkdown: reportMarkdown || reportData.reportMarkdown || '',
       };
       
       // Log the data being sent to the PDF generator
@@ -1049,13 +1082,32 @@ export default function NewResultsPage({ initialUserName }: NewResultsPageProps 
 
   // Add this function before the return statement in the NewResultsPage component
   const formatReportDataForPDF = () => {
+    // Get company name from all possible sources
+    let companyName = null;
+    
+    // Check session/local storage
+    if (typeof window !== 'undefined') {
+      companyName = sessionStorage.getItem('scorecardLeadCompany') || 
+                   localStorage.getItem('scorecardLeadCompany');
+    }
+    
+    // Fallback to industry if we still don't have a company name
+    if (!companyName) {
+      companyName = userIndustry || "Company";
+    }
+    
+    // Get email with fallbacks
+    const email = sessionStorage.getItem('scorecardLeadEmail') || 
+                localStorage.getItem('scorecardLeadEmail') || 
+                "user@example.com";
+    
     // Format data into the structure expected by ScoreCardData interface
     return {
       UserInformation: {
         UserName: userName || 'User',
-        CompanyName: userIndustry || 'Company',
+        CompanyName: companyName,
         Industry: userIndustry || 'Industry',
-        Email: 'user@example.com', // Add a default email or get from user data if available
+        Email: email,
       },
       ScoreInformation: {
         AITier: userTier || 'Dabbler',

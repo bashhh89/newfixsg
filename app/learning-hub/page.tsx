@@ -1563,22 +1563,6 @@ export default function LearningHubPage() {
       setIsClient(true);
     }
   }, []);
-
-  // Define the header component
-  const TopNavigationHeader = () => (
-    <div className="bg-white shadow-sm border-b border-gray-200">
-      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-sg-bright-green rounded-full flex items-center justify-center text-sg-dark-teal font-bold">
-              AI
-            </div>
-            <span className="font-bold text-sg-dark-teal">AI Learning Hub</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
   
   // Set user tier from query parameters if available
   useEffect(() => {
@@ -1596,7 +1580,41 @@ export default function LearningHubPage() {
       }
     }
   }, []);
+  
+  // Load user name from storage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Try to get user name from all possible storage locations
+      const storedName = 
+        sessionStorage.getItem('scorecardUserName') || 
+        sessionStorage.getItem('scorecardLeadName') || 
+        localStorage.getItem('scorecardUserName') || 
+        localStorage.getItem('scorecardLeadName');
+      
+      // Only update if we found a valid name that's not "User"
+      if (storedName && storedName.trim() !== '' && storedName.toLowerCase() !== 'user') {
+        console.log("Learning Hub: Found user name in storage:", storedName);
+        setUserName(storedName);
+      }
+    }
+  }, []);
 
+  // Define the header component
+  const TopNavigationHeader = () => (
+    <div className="bg-white shadow-sm border-b border-gray-200">
+      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center py-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-sg-bright-green rounded-full flex items-center justify-center text-sg-dark-teal font-bold">
+              AI
+            </div>
+            <span className="font-bold text-sg-dark-teal">AI Learning Hub</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+  
   // --- Prompt Library State ---
   const [selectedPromptTier, setSelectedPromptTier] = useState<'All' | 'Dabbler' | 'Enabler' | 'Leader'>('All');
   const [selectedPromptCategory, setSelectedPromptCategory] = useState<string>('All');

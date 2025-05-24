@@ -67,9 +67,13 @@ const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({
         sessionStorage.setItem('scorecardUserName', formattedName);
         localStorage.setItem('scorecardUserName', formattedName);
         sessionStorage.setItem('scorecardLeadCompany', data.companyName);
+        localStorage.setItem('scorecardLeadCompany', data.companyName);
         sessionStorage.setItem('scorecardLeadEmail', data.email);
+        localStorage.setItem('scorecardLeadEmail', data.email);
         sessionStorage.setItem('scorecardLeadPhone', data.phone || '');
+        localStorage.setItem('scorecardLeadPhone', data.phone || '');
         sessionStorage.setItem('scorecardLeadIndustry', industry);
+        localStorage.setItem('scorecardLeadIndustry', industry);
       }
 
       // Determine if this is a pre-assessment or post-assessment lead capture

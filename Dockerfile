@@ -1,22 +1,25 @@
+FROM alpine/git:latest AS source
+
+# Clone the repository (replace with your repository)
+RUN git clone https://github.com/bashhh89/newfixsg.git /app
+WORKDIR /app
+RUN git checkout againbranch
+
+# Second stage - build and run the application
 FROM node:22-alpine
 
 WORKDIR /app
 
+# Copy from the git stage
+COPY --from=source /app /app
+
 # Create minimal .npmrc
 RUN echo "legacy-peer-deps=true" > .npmrc
 
-# Copy package files first for better layer caching
-COPY package.json .
-COPY package-lock.json* .
-COPY pnpm-lock.yaml* .
-
-# Install dependencies using npm
+# Install dependencies
 RUN npm install --legacy-peer-deps
 
-# Copy the rest of the application
-COPY . .
-
-# Build the application
+# Build the application with fallback
 RUN npm run build || echo "Build completed with warnings"
 
 # Set the port

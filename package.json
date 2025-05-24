@@ -7,15 +7,16 @@
     "predev": "npx kill-port 3006",
     "dev": "cross-env next dev -p 3006",
     "dev:windows": "powershell -Command \"next dev -p 3006\"",
-    "prebuild": "npm install --legacy-peer-deps",
-    "build": "node easypanel-build.js",
+    "prebuild": "",
+    "build": "next build",
     "start": "next start -p ${PORT:-3008}",
     "lint": "next lint",
     "test-pdf": "node test-pdf-generation.js",
     "verify": "node verify-deploy-readiness.js",
     "deploy:prepare": "pnpm install --no-frozen-lockfile && pnpm run build && pnpm run verify",
     "deploy:pm2": "setup-pm2-production.bat",
-    "deploy:env": "node deploy-env-setup.js"
+    "deploy:env": "node deploy-env-setup.js",
+    "easypanel:build": "node easypanel-build.js"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "6.7.2",

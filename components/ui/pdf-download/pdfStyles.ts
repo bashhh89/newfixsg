@@ -3,7 +3,7 @@ const COLORS = {
   primaryDark: '#103138',
   accentGreen: '#20E28F',
   white: '#FFFFFF',
-  lightBg: '#F7F9FC',
+  lightBg: '#F3FDF5',
   textDark: '#103138',
   textLight: '#6D7278',
   borderColor: '#DDE2E5',
@@ -102,6 +102,104 @@ export const pdfStyles = {
     color: '#5F6368',
     alignment: 'center',
   },
+  
+  // NEW STYLES FOR PAGES 3 & 4 - "Full Report Details" section
+  fullReportHeader: {
+    font: 'PlusJakarta',
+    fontSize: 22,
+    bold: true,
+    color: COLORS.primaryDark,
+    margin: [0, 20, 0, 20],
+    decoration: 'underline',
+    decorationStyle: 'solid',
+    decorationColor: COLORS.accentGreen,
+    decorationThickness: 2,
+  },
+  
+  fullReportIntro: {
+    font: 'PlusJakarta',
+    fontSize: 18,
+    color: COLORS.primaryDark,
+    margin: [0, 0, 0, 10],
+    lineHeight: 1.4,
+  },
+  
+  reportSubTitle: {
+    font: 'PlusJakarta',
+    fontSize: 20,
+    bold: true,
+    color: COLORS.primaryDark,
+    margin: [0, 0, 0, 5],
+    lineHeight: 1.4,
+  },
+  
+  tierText: {
+    font: 'PlusJakarta',
+    fontSize: 18,
+    bold: true,
+    color: COLORS.primaryDark,
+    margin: [0, 0, 0, 5],
+  },
+  
+  scoreBox: {
+    background: COLORS.lightBg,
+    padding: [12, 8],
+    border: [1, 'solid', COLORS.borderColor],
+    borderRadius: 4,
+    margin: [0, 0, 0, 20],
+    display: 'inline-block',
+  },
+  
+  scoreText: {
+    font: 'PlusJakarta',
+    fontSize: 18,
+    bold: true,
+    color: COLORS.primaryDark,
+  },
+  
+  keyFindingsHeader: {
+    font: 'PlusJakarta',
+    fontSize: 20,
+    bold: true,
+    color: COLORS.primaryDark,
+    margin: [0, 20, 0, 15],
+    decoration: 'underline',
+    decorationStyle: 'solid',
+    decorationColor: COLORS.accentGreen,
+    decorationThickness: 2,
+  },
+  
+  strengthWeaknessHeader: {
+    font: 'PlusJakarta',
+    fontSize: 18,
+    bold: true,
+    color: COLORS.primaryDark,
+    margin: [0, 15, 0, 10],
+  },
+  
+  itemBlock: {
+    background: COLORS.lightBg,
+    padding: [15, 12],
+    border: [1, 'solid', COLORS.borderColor],
+    borderLeft: [4, 'solid', COLORS.accentGreen],
+    borderRadius: 4,
+    margin: [0, 0, 0, 10],
+  },
+  
+  itemBlockText: {
+    font: 'PlusJakarta',
+    fontSize: 16,
+    color: COLORS.textDark,
+    lineHeight: 1.6,
+  },
+  
+  markdownParagraph: {
+    font: 'PlusJakarta',
+    fontSize: 16,
+    color: COLORS.textDark,
+    lineHeight: 1.6,
+    margin: [0, 0, 0, 12],
+  }
 };
 
 // Export default to be compatible with different import methods

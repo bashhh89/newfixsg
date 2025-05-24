@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Efficiency Scorecard Report - QanDu.io</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 10mm 12mm 10mm;
+    }
+    
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Arial', 'Helvetica', sans-serif;
+      line-height: 1.4;
+      color: #103138;
+      margin: 0;
+      padding: 0;
+      background: #f8fafb;
+      font-size: 13px;
+    }
+    
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 0;
+    }
+    
+    /* Modern Header with compact design */
+    .header {
+      background: linear-gradient(135deg, #103138 0%, #20E28F 100%);
+      color: #FFFFFF;
+      padding: 15px 20px;
+      margin-bottom: 15px;
+      border-radius: 0 0 12px 12px;
+      box-shadow: 0 4px 12px rgba(16, 49, 56, 0.15);
+    }
+    
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .logo-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .logo {
+      max-height: 32px;
+      width: auto;
+      filter: brightness(0) invert(1);
+    }
+    
+    .header-text h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: bold;
+      letter-spacing: -0.3px;
+    }
+    
+    .header-text .subtitle {
+      margin: 2px 0 0 0;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+    
+    .report-meta {
+      text-align: right;
+      font-size: 11px;
+      opacity: 0.9;
+    }
+    
+    /* Card-based layout system */
+    .cards-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+    
+    .card {
+      background: #FFFFFF;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      border: 1px solid #DDE2E5;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #20E28F 0%, #103138 100%);
+    }
+    
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .card-icon {
+      width: 20px;
+      height: 20px;
+      background: #20E28F;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: white;
+      font-weight: bold;
+    }
+    
+    .card-title {
+      color: #103138;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0;
+    }
+    
+    /* Company info card */
+    .company-card .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    
+    .info-label {
+      font-weight: 600;
+      color: #103138;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .info-value {
+      color: #103138;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    /* Score card with enhanced design */
+    .score-card {
+      background: linear-gradient(135deg, #103138 0%, #20E28F 100%);
+      color: #FFFFFF;
+      text-align: center;
+      position: relative;
+    }
+    
+    .score-card::before {
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .score-display {
+      font-size: 28px;
+      font-weight: bold;
+      margin: 8px 0;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .tier-badge {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 4px 12px;
+      border-radius: 15px;
+      display: inline-block;
+      margin-top: 6px;
+      font-weight: 600;
+      font-size: 11px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Full-width content cards */
+    .content-card {
+      grid-column: 1 / -1;
+      margin-bottom: 12px;
+    }
+    
+    .content-card h2 {
+      color: #103138;
+      font-size: 16px;
+      margin: 0 0 12px 0;
+      font-weight: bold;
+    }
+    
+    .content-card h3 {
+      color: #103138;
+      font-size: 14px;
+      margin: 12px 0 8px 0;
+      font-weight: 600;
+    }
+    
+    .content-card h4 {
+      color: #103138;
+      font-size: 13px;
+      margin: 10px 0 6px 0;
+      font-weight: 600;
+    }
+    
+    .content-card p {
+      margin: 0 0 10px 0;
+      text-align: justify;
+      line-height: 1.5;
+      font-size: 12px;
+    }
+    
+    .content-card ul, .content-card ol {
+      margin: 10px 0;
+      padding-left: 18px;
+    }
+    
+    .content-card li {
+      margin-bottom: 4px;
+      line-height: 1.4;
+      font-size: 12px;
+    }
+    
+    .content-card strong {
+      color: #103138;
+      font-weight: 600;
+    }
+    
+    /* Strengths and weaknesses in two columns */
+    .findings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 10px;
+    }
+    
+    .findings-column {
+      background: #F3FDF5;
+      padding: 12px;
+      border-radius: 8px;
+      border-left: 4px solid #20E28F;
+    }
+    
+    .findings-column h3 {
+      margin: 0 0 8px 0;
+      font-size: 13px;
+      color: #103138;
+    }
+    
+    .findings-column ul {
+      margin: 0;
+      padding-left: 15px;
+    }
+    
+    .findings-column li {
+      font-size: 11px;
+      line-height: 1.4;
+      margin-bottom: 3px;
+    }
+    
+    /* Action plan with numbered cards */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    
+    .action-item {
+      background: #F3FDF5;
+      padding: 12px;
+      border-radius: 8px;
+      border-left: 4px solid #20E28F;
+      position: relative;
+    }
+    
+    .action-number {
+      position: absolute;
+      top: -8px;
+      left: 12px;
+      background: #103138;
+      color: white;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+    }
+    
+    .action-item h4 {
+      margin: 8px 0 6px 0;
+      font-size: 12px;
+      color: #103138;
+    }
+    
+    .action-item ul {
+      margin: 0;
+      padding-left: 15px;
+    }
+    
+    .action-item li {
+      font-size: 10px;
+      line-height: 1.3;
+      margin-bottom: 2px;
+    }
+    
+    /* Compact Q&A section */
+    .qa-card {
+      background: #F3FDF5;
+      border: 1px solid #20E28F;
+    }
+    
+    .phase-header {
+      background: #103138;
+      color: #FFFFFF;
+      padding: 8px 12px;
+      border-radius: 5px;
+      margin: 15px 0 8px 0;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    
+    .qa-item {
+      margin-bottom: 10px;
+      padding: 8px;
+      background: #FFFFFF;
+      border-radius: 5px;
+      border-left: 3px solid #20E28F;
+    }
+    
+    .qa-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .question {
+      font-weight: 600;
+      color: #103138;
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+    
+    .answer {
+      color: #103138;
+      margin-left: 8px;
+      font-size: 10px;
+      line-height: 1.4;
+    }
+    
+    /* Compact footer */
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      padding: 12px 0;
+      border-top: 2px solid #20E28F;
+      color: #6D7278;
+      font-size: 10px;
+      background: #F3FDF5;
+    }
+    
+    .footer .brand-info {
+      color: #103138;
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-content">
+        <div class="logo-section">
+          <div class="header-text">
+            <h1>AI Efficiency Scorecard</h1>
+            <p class="subtitle">Comprehensive AI Maturity Assessment</p>
+          </div>
+        </div>
+        <div class="report-meta">
+          <div>Generated: 12/19/2024</div>
+          <div>Confidential Report</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Company Info and Score Cards -->
+    <div class="cards-container">
+      <div class="card company-card">
+        <div class="card-header">
+          <div class="card-icon">🏢</div>
+          <h3 class="card-title">Organization Overview</h3>
+        </div>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Company</span>
+            <span class="info-value">QanDu.io</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Contact</span>
+            <span class="info-value">Not specified</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Industry</span>
+            <span class="info-value">Property/Real Estate</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Report ID</span>
+            <span class="info-value">66FEXCg6Q6Qk5vICt8ex</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card score-card">
+        <div class="card-header">
+          <div class="card-icon">📊</div>
+          <h3 class="card-title">Assessment Results</h3>
+        </div>
+        <div class="score-display">60/100</div>
+        <div class="tier-badge">Dabbler</div>
+      </div>
+    </div>
+
+    <!-- Key Findings Card -->
+    <div class="card content-card">
+      <div class="card-header">
+        <div class="card-icon">🎯</div>
+        <h3 class="card-title">Key Findings</h3>
+      </div>
+      <div class="findings-grid">
+        <div class="findings-column">
+          <h3>✅ Strengths</h3>
+          <ul>
+            <li><strong>Initiative in Exploring AI:</strong> Your agency has shown initiative by prioritizing AI-driven strategies in key business areas such as property management, marketing, and client relationship management.</li>
+            <li><strong>Diverse Data Collection:</strong> The agency collects a wide range of data, including property listing, client information, and market analytics.</li>
+            <li><strong>Established Data Privacy Processes:</strong> With processes in place for data privacy and compliance, your agency demonstrates a proactive approach.</li>
+            <li><strong>Use of AI-Enhanced Tools:</strong> The adoption of AI-enhanced CRM systems and automated marketing tools indicates a willingness to leverage technology.</li>
+            <li><strong>Cross-Functional AI Teams:</strong> Establishing cross-functional teams with AI specialists and external consultants shows commitment.</li>
+          </ul>
+        </div>
+        <div class="findings-column">
+          <h3>⚠️ Areas for Improvement</h3>
+          <ul>
+            <li><strong>Lack of Company-Wide AI Strategy:</strong> The absence of a unified framework for setting and measuring AI goals across departments can lead to fragmented efforts.</li>
+            <li><strong>Inconsistent Data Quality:</strong> Rating the data quality as average suggests potential issues in data consistency and reliability.</li>
+            <li><strong>Limited AI Governance Structures:</strong> While some governance measures are in place, the need for more comprehensive protocols indicates room for improvement.</li>
+            <li><strong>Moderate Training Effectiveness:</strong> Current training programs are only moderately effective, which may limit staff ability to fully utilize AI tools.</li>
+            <li><strong>Ad Hoc Impact Measurement:</strong> Without a consistent approach to measuring the business impact of AI initiatives, it becomes challenging to demonstrate value.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Strategic Action Plan Card -->
+    <div class="card content-card">
+      <div class="card-header">
+        <div class="card-icon">🚀</div>
+        <h3 class="card-title">Strategic Action Plan</h3>
+      </div>
+      <div class="action-grid">
+        <div class="action-item">
+          <div class="action-number">1</div>
+          <h4>Develop a Unified AI Strategy</h4>
+          <ul>
+            <li>Organize a cross-departmental workshop to align AI goals</li>
+            <li>Establish clear, company-wide AI objectives and KPIs</li>
+            <li>Implement a centralized dashboard for tracking AI performance metrics</li>
+          </ul>
+        </div>
+        <div class="action-item">
+          <div class="action-number">2</div>
+          <h4>Enhance Data Quality and Integration</h4>
+          <ul>
+            <li>Conduct a comprehensive data audit to identify inconsistencies</li>
+            <li>Standardize data formats and integration processes</li>
+            <li>Implement tools for automatic data cleansing and validation</li>
+          </ul>
+        </div>
+        <div class="action-item">
+          <div class="action-number">3</div>
+          <h4>Strengthen AI Governance and Compliance</h4>
+          <ul>
+            <li>Formalize AI governance structures with dedicated roles</li>
+            <li>Develop comprehensive protocols for addressing bias and transparency</li>
+            <li>Schedule regular audits and reviews to ensure compliance</li>
+          </ul>
+        </div>
+        <div class="action-item">
+          <div class="action-number">4</div>
+          <h4>Improve Training Programs</h4>
+          <ul>
+            <li>Design targeted training sessions focused on specific AI tools</li>
+            <li>Encourage continuous learning through online courses</li>
+            <li>Foster a culture of innovation by incentivizing staff proposals</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resources Card -->
+    <div class="card content-card">
+      <div class="card-header">
+        <div class="card-icon">📚</div>
+        <h3 class="card-title">Getting Started & Resources</h3>
+      </div>
+      <h4>Sample AI Goal-Setting Meeting Agenda</h4>
+      <ol>
+        <li><strong>Welcome and Introduction:</strong> Overview of current AI initiatives and objectives.</li>
+        <li><strong>Strategic Prioritization:</strong> Align AI goals with property management and client service priorities.</li>
+        <li><strong>Resource Allocation:</strong> Discuss budget and resource needs for AI projects.</li>
+        <li><strong>Next Steps and Action Items:</strong> Assign responsibilities and set timelines for goal achievement.</li>
+      </ol>
+      
+      <h4>Example Prompts for Property/Real Estate Marketing Managers</h4>
+      <ul>
+        <li><strong>PROMPT:</strong> "Generate a marketing campaign plan for promoting a new property listing, focusing on local market trends and buyer personas."</li>
+        <li><strong>PROMPT:</strong> "Analyze our CRM data to identify patterns in client interactions and suggest improvements for customer retention."</li>
+      </ul>
+    </div>
+
+    <!-- Learning Path Card -->
+    <div class="card content-card">
+      <div class="card-header">
+        <div class="card-icon">🎓</div>
+        <h3 class="card-title">Your Personalized AI Learning Path</h3>
+      </div>
+      <ol>
+        <li><strong>AI for Real Estate Professionals - Online Course:</strong> This course will provide foundational knowledge of AI applications specific to the real estate sector.</li>
+        <li><strong>Data Management and Analytics Workshop:</strong> Attending this workshop will enhance your ability to manage and analyze data.</li>
+        <li><strong>AI Strategy and Governance Webinar:</strong> This webinar offers insights into developing robust AI strategies and governance frameworks.</li>
+      </ol>
+    </div>
+
+    <!-- Benchmarks Card -->
+    <div class="card content-card">
+      <div class="card-header">
+        <div class="card-icon">📊</div>
+        <h3 class="card-title">Industry Benchmarks</h3>
+      </div>
+      <h4>Dabbler Tier Organizations in Property/Real Estate</h4>
+      <ul>
+        <li>Typically use AI for basic CRM enhancements and automated marketing tools.</li>
+        <li>Allocate 1-2% of the IT budget to AI initiatives, focusing on immediate operational benefits.</li>
+        <li>Often lack a formal AI governance structure, with only 20% having established comprehensive AI policies.</li>
+      </ul>
+      
+      <h4>Enabler Tier Organizations in Property/Real Estate</h4>
+      <ul>
+        <li>Deploy more sophisticated AI capabilities, such as predictive analytics for market forecasting.</li>
+        <li>Allocate 3-5% of the IT budget to AI, seeing a 15-20% improvement in operational efficiency.</li>
+        <li>Have integrated AI into core business processes, with 60% having formal AI governance and measurement frameworks.</li>
+      </ul>
+    </div>
+
+    <!-- Q&A Card -->
+    <div class="card qa-card content-card">
+      <div class="card-header">
+        <div class="card-icon">❓</div>
+        <h3 class="card-title">Assessment Questions & Responses</h3>
+      </div>
+      <p>Below are the questions from your assessment and your responses:</p>
+      
+      <div class="phase-header">Strategy & Goals</div>
+      <div class="qa-item">
+        <div class="question">Q1: Which of the following business functions within your real estate agency are currently prioritized for AI-driven strategy and goal setting?</div>
+        <div class="answer">Property management operations | Marketing and client lead generation | Business analytics and market forecasting | Client relationship management (CRM) and retention</div>
+      </div>
+      <div class="qa-item">
+        <div class="question">Q2: How would you rate the current effectiveness of your real estate agency's AI-driven strategies in achieving your core business goals?</div>
+        <div class="answer">3 - Moderately effective</div>
+      </div>
+      
+      <div class="phase-header">Data Readiness</div>
+      <div class="qa-item">
+        <div class="question">Q1: Which types of data does your real estate agency currently collect and maintain to support AI-driven business operations?</div>
+        <div class="answer">Property listing and transaction data | Client and lead information | Agent performance and productivity metrics | Market trends and competitor analytics</div>
+      </div>
+      <div class="qa-item">
+        <div class="question">Q2: How would you rate the quality and consistency of the data your real estate agency relies on for AI-driven decision-making?</div>
+        <div class="answer">3 - Average (some inconsistencies, but generally usable)</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="brand-info">Social Garden AI Efficiency Scorecard</div>
+      <p>Confidential Report | Generated on 12/19/2024</p>
+      <p>Report ID: 66FEXCg6Q6Qk5vICt8ex</p>
+    </div>
+  </div>
+</body>
+</html>

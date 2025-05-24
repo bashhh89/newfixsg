@@ -1,0 +1,782 @@
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>AI Efficiency Scorecard Report - Test Company Inc</title>
+      
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 10mm 12mm 10mm;
+    }
+    
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Arial', 'Helvetica', sans-serif;
+      line-height: 1.4;
+      color: #103138;
+      margin: 0;
+      padding: 0;
+      background: #f8fafb;
+      font-size: 13px;
+    }
+    
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 0;
+    }
+    
+    /* Modern Header with compact design */
+    .header {
+      background: linear-gradient(135deg, #103138 0%, #20E28F 100%);
+      color: #FFFFFF;
+      padding: 15px 20px;
+      margin-bottom: 15px;
+      border-radius: 0 0 12px 12px;
+      box-shadow: 0 4px 12px rgba(16, 49, 56, 0.15);
+    }
+    
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .logo-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .logo {
+      max-height: 32px;
+      width: auto;
+      filter: brightness(0) invert(1);
+    }
+    
+    .header-text h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: bold;
+      letter-spacing: -0.3px;
+    }
+    
+    .header-text .subtitle {
+      margin: 2px 0 0 0;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+    
+    .report-meta {
+      text-align: right;
+      font-size: 11px;
+      opacity: 0.9;
+    }
+    
+    /* Card-based layout system */
+    .cards-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+    
+    .card {
+      background: #FFFFFF;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      border: 1px solid #DDE2E5;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #20E28F 0%, #103138 100%);
+    }
+    
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .card-icon {
+      width: 20px;
+      height: 20px;
+      background: #20E28F;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: white;
+      font-weight: bold;
+    }
+    
+    .card-title {
+      color: #103138;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0;
+    }
+    
+    /* Company info card */
+    .company-card .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    
+    .info-label {
+      font-weight: 600;
+      color: #103138;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .info-value {
+      color: #103138;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    /* Score card with enhanced design */
+    .score-card {
+      background: linear-gradient(135deg, #103138 0%, #20E28F 100%);
+      color: #FFFFFF;
+      text-align: center;
+      position: relative;
+    }
+    
+    .score-card::before {
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .score-display {
+      font-size: 28px;
+      font-weight: bold;
+      margin: 8px 0;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .tier-badge {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 4px 12px;
+      border-radius: 15px;
+      display: inline-block;
+      margin-top: 6px;
+      font-weight: 600;
+      font-size: 11px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Full-width content cards */
+    .content-card {
+      grid-column: 1 / -1;
+      margin-bottom: 12px;
+    }
+    
+    .content-card h2 {
+      color: #103138;
+      font-size: 16px;
+      margin: 0 0 12px 0;
+      font-weight: bold;
+    }
+    
+    .content-card h3 {
+      color: #103138;
+      font-size: 14px;
+      margin: 12px 0 8px 0;
+      font-weight: 600;
+    }
+    
+    .content-card h4 {
+      color: #103138;
+      font-size: 13px;
+      margin: 10px 0 6px 0;
+      font-weight: 600;
+    }
+    
+    .content-card p {
+      margin: 0 0 10px 0;
+      text-align: justify;
+      line-height: 1.5;
+      font-size: 12px;
+    }
+    
+    .content-card ul, .content-card ol {
+      margin: 10px 0;
+      padding-left: 18px;
+    }
+    
+    .content-card li {
+      margin-bottom: 4px;
+      line-height: 1.4;
+      font-size: 12px;
+    }
+    
+    .content-card strong {
+      color: #103138;
+      font-weight: 600;
+    }
+    
+    /* Strengths and weaknesses in two columns */
+    .findings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 10px;
+    }
+    
+    .findings-column {
+      background: #F3FDF5;
+      padding: 12px;
+      border-radius: 8px;
+      border-left: 4px solid #20E28F;
+    }
+    
+    .findings-column h3 {
+      margin: 0 0 8px 0;
+      font-size: 13px;
+      color: #103138;
+    }
+    
+    .findings-column ul {
+      margin: 0;
+      padding-left: 15px;
+    }
+    
+    .findings-column li {
+      font-size: 11px;
+      line-height: 1.4;
+      margin-bottom: 3px;
+    }
+    
+    /* Action plan with numbered cards */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    
+    .action-item {
+      background: #F3FDF5;
+      padding: 12px;
+      border-radius: 8px;
+      border-left: 4px solid #20E28F;
+      position: relative;
+    }
+    
+    .action-number {
+      position: absolute;
+      top: -8px;
+      left: 12px;
+      background: #103138;
+      color: white;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+    }
+    
+    .action-item h4 {
+      margin: 8px 0 6px 0;
+      font-size: 12px;
+      color: #103138;
+    }
+    
+    .action-item ul {
+      margin: 0;
+      padding-left: 15px;
+    }
+    
+    .action-item li {
+      font-size: 10px;
+      line-height: 1.3;
+      margin-bottom: 2px;
+    }
+    
+    /* Compact Q&A section */
+    .qa-card {
+      background: #F3FDF5;
+      border: 1px solid #20E28F;
+    }
+    
+    .phase-header {
+      background: #103138;
+      color: #FFFFFF;
+      padding: 8px 12px;
+      border-radius: 5px;
+      margin: 15px 0 8px 0;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    
+    .qa-item {
+      margin-bottom: 10px;
+      padding: 8px;
+      background: #FFFFFF;
+      border-radius: 5px;
+      border-left: 3px solid #20E28F;
+    }
+    
+    .qa-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .question {
+      font-weight: 600;
+      color: #103138;
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+    
+    .answer {
+      color: #103138;
+      margin-left: 8px;
+      font-size: 10px;
+      line-height: 1.4;
+    }
+    
+    /* Compact footer */
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      padding: 12px 0;
+      border-top: 2px solid #20E28F;
+      color: #6D7278;
+      font-size: 10px;
+      background: #F3FDF5;
+    }
+    
+    .footer .brand-info {
+      color: #103138;
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+    
+/* Presentation style layout */
+    .presentation-style {
+      background: #f8fafb;
+    }
+
+    .presentation-style .container {
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    .presentation-style .slide {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: calc(100vh - 40px);
+      page-break-after: always;
+      margin-bottom: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(16, 49, 56, 0.15);
+      overflow: hidden;
+    }
+
+    .presentation-style .slide-content {
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .presentation-style .slide-image {
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      min-height: 100%;
+      background: linear-gradient(135deg, #103138 0%, #20E28F 100%);
+    }
+
+    .presentation-style .slide-title {
+      font-size: 36px;
+      font-weight: bold;
+      color: #103138;
+      margin: 0 0 20px 0;
+      line-height: 1.2;
+    }
+
+    .presentation-style .slide-subtitle {
+      font-size: 18px;
+      color: #6D7278;
+      margin: 0 0 30px 0;
+      line-height: 1.4;
+    }
+
+    .presentation-style .highlight-box {
+      background: #F3FDF5;
+      border-left: 4px solid #20E28F;
+      padding: 20px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+    }
+
+    .presentation-style .highlight-box h3 {
+      color: #103138;
+      font-size: 18px;
+      margin: 0 0 10px 0;
+    }
+
+    .presentation-style .highlight-box ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .presentation-style .highlight-box li {
+      margin-bottom: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .presentation-style .grid-boxes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .presentation-style .box {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #DDE2E5;
+    }
+
+    .presentation-style .box-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #103138;
+      margin: 0 0 10px 0;
+    }
+
+    .presentation-style .box-content {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .presentation-style .action-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .presentation-style .step-number {
+      width: 30px;
+      height: 30px;
+      background: #103138;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .presentation-style .step-content {
+      flex: 1;
+    }
+
+    .presentation-style .step-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #103138;
+      margin: 0 0 8px 0;
+    }
+
+    .presentation-style .step-description {
+      font-size: 14px;
+      line-height: 1.5;
+      color: #103138;
+    }
+
+    
+    /* Print optimizations */
+    @media print {
+      body {
+        font-size: 11px;
+        background: white;
+      }
+      
+      .card {
+        page-break-inside: avoid;
+        margin-bottom: 8px;
+        box-shadow: none;
+        border: 1px solid #ddd;
+      }
+      
+      .content-card {
+        page-break-inside: avoid;
+      }
+      
+      .qa-card {
+        page-break-inside: avoid;
+      }
+      
+      .phase-header {
+        page-break-after: avoid;
+      }
+      
+      .qa-item {
+        page-break-inside: avoid;
+      }
+      
+      .action-grid {
+        page-break-inside: avoid;
+      }
+      
+      .findings-grid {
+        page-break-inside: avoid;
+      }
+    }
+    
+    /* Utility classes */
+    .text-center { text-align: center; }
+    .text-left { text-align: left; }
+    .text-right { text-align: right; }
+    .font-bold { font-weight: bold; }
+    .font-semibold { font-weight: 600; }
+    .mb-0 { margin-bottom: 0; }
+    .mb-1 { margin-bottom: 6px; }
+    .mb-2 { margin-bottom: 10px; }
+    .mt-0 { margin-top: 0; }
+    .mt-1 { margin-top: 6px; }
+    .mt-2 { margin-top: 10px; }
+  </style>
+
+    </head>
+    <body class="presentation-style">
+      <div class="container">
+        
+    <div class="header">
+      <div class="header-content">
+        <div class="logo-section">
+          <img src="/footer-logo.svg" alt="Social Garden AI Scorecard" class="logo" />
+          <div class="header-text">
+            <h1>AI Efficiency Scorecard</h1>
+            <p class="subtitle">Comprehensive AI Maturity Assessment</p>
+          </div>
+        </div>
+        <div class="report-meta">
+          <div>Generated: 5/24/2025</div>
+          <div>Confidential Report</div>
+        </div>
+      </div>
+    </div>
+  
+        
+    <div class="cards-container">
+      <div class="card company-card">
+        <div class="card-header">
+          <div class="card-icon">🏢</div>
+          <h3 class="card-title">Organization Overview</h3>
+        </div>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Company</span>
+            <span class="info-value">Test Company Inc</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Contact</span>
+            <span class="info-value">John Doe</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Industry</span>
+            <span class="info-value">Technology</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Report ID</span>
+            <span class="info-value">test-123</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card score-card">
+        <div class="card-header">
+          <div class="card-icon">📊</div>
+          <h3 class="card-title">Assessment Results</h3>
+        </div>
+        <div class="score-display">65/100</div>
+        <div class="tier-badge">Enabler</div>
+      </div>
+    </div>
+  
+        
+        
+      <section class="slide">
+        <div class="slide-content">
+          <h1 class="slide-title">AI Efficiency Scorecard for John Doe</h1>
+          <p class="slide-subtitle"><h1>AI Efficiency Scorecard for Technology Marketing Manager</h1></p>
+          <p><strong>by John Doe</strong></p>
+        </div>
+        <div class="slide-image" style="background-image: url('/images/office-ai.jpg');"></div>
+      </section>
+    
+        <section class="slide">
+          <div class="slide-content">
+            <h2 class="slide-title">Key Strengths in AI Adoption</h2>
+            <div class="highlight-box">
+              <ul>
+<li>Strategic development in progress</li>
+<li>Regular use of AI tools</li>
+</ul>
+            </div>
+          </div>
+          <div class="slide-image" style="background-image: url('/images/ai-strengths-bg.jpg');"></div>
+        </section>
+      
+        <section class="slide">
+          <div class="slide-content">
+            <h2 class="slide-title">Challenges and Weaknesses</h2>
+            <div class="grid-boxes">
+              <ul>
+<li>Need more formal strategy</li>
+<li>Limited advanced capabilities</li>
+</ul>
+            </div>
+          </div>
+          <div class="slide-image" style="background-image: url('/images/ai-challenges-bg.jpg');"></div>
+
+        </section>
+      
+        <section class="slide">
+          <div class="slide-content">
+            <h2 class="slide-title">Strategic Action Plan Overview</h2>
+            
+              <div class="action-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                  <h3 class="step-title"><strong>Develop Formal Strategy</h3>
+                  <p class="step-description"></strong></p>
+                </div>
+              </div>
+            
+              <div class="action-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                  <h3 class="step-title">Action 2</h3>
+                  <p class="step-description">Create documented AI strategy</p>
+                </div>
+              </div>
+            
+              <div class="action-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                  <h3 class="step-title">Action 3</h3>
+                  <p class="step-description">Align with business goals</p>
+                </div>
+              </div>
+            
+              <div class="action-step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                  <h3 class="step-title"><strong>Expand Tool Usage</h3>
+                  <p class="step-description"></strong></p>
+                </div>
+              </div>
+            
+              <div class="action-step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                  <h3 class="step-title">Action 2</h3>
+                  <p class="step-description">Explore advanced AI capabilities</p>
+                </div>
+              </div>
+            
+              <div class="action-step">
+                <div class="step-number">6</div>
+                <div class="step-content">
+                  <h3 class="step-title">Action 3</h3>
+                  <p class="step-description">Train team on new tools</p>
+                </div>
+              </div>
+            
+          </div>
+          <div class="slide-image" style="background-image: url('/images/ai-action-plan-bg.jpg');"></div>
+        </section>
+      
+            <section class="slide">
+              <div class="slide-content">
+                <h2 class="slide-title">Learning Path</h2>
+                <div class="highlight-box">
+                  <ol>
+<li><strong>"AI Strategy Development" (Course)</strong></li>
+<ul>
+<li>Learn to create comprehensive AI strategies</li>
+</ul>
+</ol>
+
+<ol>
+<li><strong>"Advanced AI Tools" (Workshop)</strong></li>
+<ul>
+<li>Hands-on training with cutting-edge AI tools</li>
+</ul>
+</ol>
+                </div>
+              </div>
+              <div class="slide-image" style="background-image: url('/images/ai-content-bg.jpg');"></div>
+            </section>
+          
+        
+    <div class="card qa-card content-card">
+      <div class="card-header">
+        <div class="card-icon">❓</div>
+        <h3 class="card-title">Assessment Questions & Responses</h3>
+      </div>
+      <p>Below are the questions from your assessment and your responses:</p>
+  <div class="phase-header">Strategy & Goals</div>
+        <div class="qa-item">
+          <div class="question">Q1: How would you describe your organization's current AI strategy?</div>
+          <div class="answer">We have some strategic elements but are still developing</div>
+        </div>
+      <div class="phase-header">Technology & Tools</div>
+        <div class="qa-item">
+          <div class="question">Q1: How frequently does your team use AI tools?</div>
+          <div class="answer">3</div>
+        </div>
+      </div>
+        
+    <div class="footer">
+      <div class="brand-info">Social Garden AI Efficiency Scorecard</div>
+      <p>Confidential Report | Generated on 5/24/2025</p>
+      <p>Report ID: test-123</p>
+    </div>
+  
+      </div>
+    </body>
+    </html>
+  

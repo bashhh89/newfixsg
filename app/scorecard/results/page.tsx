@@ -39,18 +39,32 @@ export default function ResultsPage() {
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [reportData, setReportData] = useState<any>(null);
   const [leadCaptured, setLeadCaptured] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
     // Debug any issues with accessing the results
     console.log('RESULTS PAGE WRAPPER: Component mounted');
     
     if (typeof window !== 'undefined') {
+      // Check for lead information first
+      const leadEmail = sessionStorage.getItem('scorecardLeadEmail') || localStorage.getItem('scorecardLeadEmail');
+      const leadName = sessionStorage.getItem('scorecardLeadName') || 
+                       sessionStorage.getItem('scorecardUserName') || 
+                       localStorage.getItem('scorecardLeadName') || 
+                       localStorage.getItem('scorecardUserName');
+      
       // Log storage state to debug
       const sessionReportId = sessionStorage.getItem('currentReportID') || sessionStorage.getItem('reportId');
       const localReportId = localStorage.getItem('currentReportID') || localStorage.getItem('reportId');
       
       console.log('RESULTS PAGE WRAPPER: Session report ID:', sessionReportId);
       console.log('RESULTS PAGE WRAPPER: Local report ID:', localReportId);
+      console.log('RESULTS PAGE WRAPPER: Lead name found:', leadName);
+      
+      // Store userName in state for passing to child components
+      if (leadName && leadName !== 'User') {
+        setUserName(leadName);
+      }
       
       // Log session/local markdown
       const sessionMarkdown = sessionStorage.getItem('reportMarkdown');
@@ -74,10 +88,6 @@ export default function ResultsPage() {
                   
       console.log('RESULTS PAGE WRAPPER: Stored tier value:', tier);
 
-      // Check if lead information exists
-      const leadEmail = sessionStorage.getItem('scorecardLeadEmail') || localStorage.getItem('scorecardLeadEmail');
-      const leadName = sessionStorage.getItem('scorecardLeadName') || localStorage.getItem('scorecardLeadName');
-      
       // If we have report data but no lead info, show the lead form
       if (sessionMarkdown && (!leadEmail || !leadName)) {
         console.log('RESULTS PAGE WRAPPER: Report exists but no lead info found, showing lead form');
@@ -97,13 +107,25 @@ export default function ResultsPage() {
   }, []);
   
   const handleLeadCaptureSuccess = (capturedName: string) => {
-    console.log("Lead capture successful. Captured name:", capturedName);
-    setLeadCaptured(true);
-    setShowLeadForm(false);
+    console.log("RESULTS PAGE WRAPPER: Lead capture successful. Captured name:", capturedName);
     
-    // Store the name in sessionStorage for use in results page
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('scorecardUserName', capturedName);
+    // Validate the name
+    if (capturedName && capturedName.trim() !== '' && capturedName.toLowerCase() !== 'user') {
+      const formattedName = capturedName.trim();
+      setUserName(formattedName);
+      setLeadCaptured(true);
+      setShowLeadForm(false);
+      
+      // Store the name in multiple places for redundancy
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('scorecardUserName', formattedName);
+        localStorage.setItem('scorecardUserName', formattedName);
+      }
+    } else {
+      console.warn("RESULTS PAGE WRAPPER: Invalid name captured from lead form, using default");
+      setUserName("Customer");
+      setLeadCaptured(true);
+      setShowLeadForm(false);
     }
   };
   
@@ -123,7 +145,7 @@ export default function ResultsPage() {
   
   return (
     <Suspense fallback={<ResultsLoading />}>
-      <NewResultsPage />
+      <NewResultsPage initialUserName={userName} />
     </Suspense>
   );
 }

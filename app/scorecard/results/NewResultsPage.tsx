@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { db } from '@/lib/firebase';
-import { getDoc, doc } from 'firebase/firestore';
+import { getDoc, doc, updateDoc } from 'firebase/firestore';
 import { Loader } from '@/components/learning-hub/loader';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -55,14 +55,18 @@ interface SectionRefs {
   [key: string]: React.RefObject<HTMLDivElement>;
 }
 
-export default function NewResultsPage() {
+interface NewResultsPageProps {
+  initialUserName?: string | null;
+}
+
+export default function NewResultsPage({ initialUserName }: NewResultsPageProps = {}) {
   // State variables
   const [activeTab, setActiveTab] = useState('Overall Tier');
   const [reportMarkdown, setReportMarkdown] = useState<string | null>(null);
   const [questionAnswerHistory, setQuestionAnswerHistory] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [userName, setUserName] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(initialUserName || null);
   const [userTier, setUserTier] = useState<string | null>(null);
   const [userIndustry, setUserIndustry] = useState<string | null>(null);
   const [reportId, setReportId] = useState<string | null>(null);
@@ -100,6 +104,12 @@ export default function NewResultsPage() {
       try {
         setIsLoading(true);
         setError(null);
+        
+        // If we already have a userName from props, use it
+        if (initialUserName && !userName) {
+          console.log("RESULTS PAGE: Using initialUserName from props:", initialUserName);
+          setUserName(initialUserName);
+        }
         
         // Get reportId from URL or storage
         let fetchedReportId: string | null = null;
@@ -149,7 +159,34 @@ export default function NewResultsPage() {
         }
         
         const questionAnswerHistoryValue = reportData.questionAnswerHistory || reportData.answers || [];
-        const userNameValue = reportData.userName || reportData.leadName || 'User';
+        
+        // Improved user name retrieval logic with more fallbacks
+        let userNameValue = null;
+        
+        // Try to get name from Firestore data first
+        if (reportData.userName && reportData.userName !== 'User') {
+          userNameValue = reportData.userName;
+        } else if (reportData.leadName && reportData.leadName !== 'User') {
+          userNameValue = reportData.leadName;
+        }
+        
+        // If not found in Firestore, check session/local storage
+        if (!userNameValue && typeof window !== 'undefined') {
+          const storedName = sessionStorage.getItem('scorecardUserName') || 
+                             sessionStorage.getItem('scorecardLeadName') || 
+                             localStorage.getItem('scorecardUserName') || 
+                             localStorage.getItem('scorecardLeadName');
+          
+          if (storedName && storedName !== 'User') {
+            userNameValue = storedName;
+          }
+        }
+        
+        // Last resort fallback
+        if (!userNameValue) {
+          userNameValue = 'Customer';  // Using a more personalized default than "User"
+          console.log("RESULTS PAGE: No user name found, using default placeholder");
+        }
         
         // Extract tier with multiple fallbacks
         let userTierValue = reportData.tier || reportData.userAITier || reportData.aiTier;
@@ -231,19 +268,45 @@ export default function NewResultsPage() {
     }
     
       fetchReportData();
-  }, [searchParams]); // Only re-run if searchParams changes
+  }, [searchParams, initialUserName]); // Only re-run if searchParams changes
 
   // Handle lead capture success
   const handleLeadCaptureSuccess = (capturedName: string) => {
-    console.log("Lead capture successful. Captured name:", capturedName);
-    setLeadCaptured(true);
-    setShowLeadForm(false);
-    setUserName(capturedName);
+    console.log("RESULTS PAGE: Lead capture successful. Captured name:", capturedName);
     
-    // Store the name in sessionStorage for use in results page
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('scorecardUserName', capturedName);
-      sessionStorage.setItem('scorecardLeadName', capturedName);
+    // Don't accept "User" as a valid input from the lead form
+    if (capturedName && capturedName.trim() !== '' && capturedName.toLowerCase() !== 'user') {
+      setUserName(capturedName.trim());
+      setLeadCaptured(true);
+      setShowLeadForm(false);
+      
+      // Store the name in multiple places for redundancy
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('scorecardUserName', capturedName.trim());
+        sessionStorage.setItem('scorecardLeadName', capturedName.trim());
+        localStorage.setItem('scorecardUserName', capturedName.trim());
+        
+        // If we have a reportId, try to update the Firestore document with the user's name
+        if (reportId) {
+          try {
+            const reportRef = doc(db, 'scorecardReports', reportId);
+            updateDoc(reportRef, {
+              userName: capturedName.trim(),
+              leadName: capturedName.trim(),
+              updatedAt: new Date()
+            }).then(() => {
+              console.log("RESULTS PAGE: Successfully updated report with user name");
+            }).catch(err => {
+              console.error("RESULTS PAGE: Error updating report with user name:", err);
+            });
+          } catch (err) {
+            console.error("RESULTS PAGE: Error updating Firestore:", err);
+          }
+        }
+      }
+    } else {
+      console.warn("RESULTS PAGE: Invalid name captured from lead form");
+      setUserName("Customer");
     }
   };
 

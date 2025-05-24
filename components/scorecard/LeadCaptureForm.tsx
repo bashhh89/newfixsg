@@ -50,13 +50,22 @@ const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({
     setError(null);
 
     try {
+      // Ensure the name is properly formatted (capitalize first letters)
+      const formattedName = data.fullName.trim()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      
       // Calculate strengths and weaknesses based on questionAnswerHistory
       const findings = generateFindings(questionAnswerHistory);
       
       // Store the data in session storage first for later reference if needed
       if (typeof window !== 'undefined') {
         console.log('Storing lead data in session storage');
-        sessionStorage.setItem('scorecardLeadName', data.fullName);
+        sessionStorage.setItem('scorecardLeadName', formattedName);
+        localStorage.setItem('scorecardLeadName', formattedName);
+        sessionStorage.setItem('scorecardUserName', formattedName);
+        localStorage.setItem('scorecardUserName', formattedName);
         sessionStorage.setItem('scorecardLeadCompany', data.companyName);
         sessionStorage.setItem('scorecardLeadEmail', data.email);
         sessionStorage.setItem('scorecardLeadPhone', data.phone || '');
@@ -81,7 +90,7 @@ const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          leadName: data.fullName,
+          leadName: formattedName,
           leadCompany: data.companyName,
           leadEmail: data.email,
           leadPhone: data.phone,
@@ -104,7 +113,7 @@ const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({
       console.log('Lead notification sent successfully');
       
       // Important: Call onSubmitSuccess before setting isSubmitting to false
-      onSubmitSuccess(data.fullName);
+      onSubmitSuccess(formattedName);
 
     } catch (err) {
       console.error('Error in form submission:', err);
@@ -168,7 +177,21 @@ const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({
                 id="fullName"
                 className={`w-full px-4 py-2 border ${errors.fullName ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-sg-bright-green focus:border-sg-bright-green`}
                 placeholder="Your full name"
-                {...register('fullName', { required: 'Full name is required' })}
+                {...register('fullName', { 
+                  required: 'Full name is required',
+                  validate: {
+                    notPlaceholder: (value) => {
+                      const lowercaseValue = value.toLowerCase().trim();
+                      return (
+                        lowercaseValue !== 'user' && 
+                        lowercaseValue !== 'test' && 
+                        lowercaseValue !== 'customer' && 
+                        lowercaseValue !== 'placeholder'
+                      ) || 'Please enter your real name';
+                    },
+                    minLength: (value) => value.trim().length > 2 || 'Name is too short'
+                  }
+                })}
               />
               {errors.fullName && (
                 <p className="mt-1 text-sm text-red-500">{errors.fullName.message}</p>

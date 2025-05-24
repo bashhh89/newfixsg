@@ -1,0 +1,10 @@
+build:
+  config:
+    PNPM_FLAGS: "--no-frozen-lockfile"
+  packages:
+    - npm
+    - nodejs
+    - pnpm
+
+run:
+  web: npm start 

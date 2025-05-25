@@ -5,6 +5,13 @@ set -e
 
 echo "Starting server installation..."
 
+# CLEANUP STEP: Remove previous build folders to save space
+echo "Cleaning up previous build data to save disk space..."
+rm -rf .next
+rm -rf node_modules/.cache
+rm -rf .vercel/output
+rm -rf .turbo
+
 # Check if pnpm is installed
 if ! command -v pnpm &> /dev/null; then
     echo "pnpm is not installed. Installing pnpm..."

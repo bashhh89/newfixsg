@@ -728,7 +728,7 @@ export default function Home() {
         console.log(`>>> FRONTEND: 🔴 Forcing navigation to /scorecard/results?reportId=${reportID}`);
         
         // Immediate hard navigation - no delays or checks
-        window.location.href = `/scorecard/results?reportId=${reportID}`;
+        router.push(`/scorecard/results?reportId=${reportID}`);
         
       } catch (firestoreError) {
         console.error(`FRONTEND: Error saving report to Firestore at: ${new Date().toISOString()}`, firestoreError);
@@ -740,7 +740,7 @@ export default function Home() {
         console.log('>>> FRONTEND: Attempting fallback navigation without reportId at:', new Date().toISOString());
         
         // Immediate hard navigation without reportId
-        window.location.href = '/scorecard/results';
+        router.push('/scorecard/results');
       }
     } catch (error) {
       console.error(`FRONTEND: Error in generateReport at: ${new Date().toISOString()}`, error);
@@ -750,7 +750,7 @@ export default function Home() {
     
     // At the very end of generateReport (even if error or success)
     console.log(`FRONTEND: generateReport function ended at: ${new Date().toISOString()}. Total duration: ${(Date.now() - startTime) / 1000}s`);
-  }, [selectedIndustry, leadName, MAX_QUESTIONS]);
+  }, [selectedIndustry, leadName, MAX_QUESTIONS, router]);
 
   // Modified lead capture success handler
   const handleLeadCaptureSuccess = useCallback((capturedName: string) => {
@@ -1171,10 +1171,10 @@ export default function Home() {
         const reportId = sessionStorage.getItem('reportId') || localStorage.getItem('reportId');
         if (reportId) {
           console.log('>>> EMERGENCY REDIRECT: Found stored reportId, forcing navigation');
-          window.location.replace(`/scorecard/results?reportId=${reportId}`);
+          router.push(`/scorecard/results?reportId=${reportId}`);
         } else {
           console.log('>>> EMERGENCY REDIRECT: No reportId found, navigating to base results page');
-          window.location.replace('/scorecard/results');
+          router.push('/scorecard/results');
         }
       }
       return <ReportLoadingIndicator isLoading={true} />;

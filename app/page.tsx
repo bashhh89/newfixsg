@@ -7,7 +7,7 @@ import LeadCaptureForm from '@/components/scorecard/LeadCaptureForm';
 import NoSidebarLayout from '@/components/NoSidebarLayout';
 import LandingPage from '@/components/LandingPage';
 import { db } from '@/lib/firebase'; // Fixed path to firebase.ts
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation'; // For navigating to results page with reportId
 import ReportLoadingIndicator from '@/components/scorecard/ReportLoadingIndicator'; // Add import for loading indicator
 import { isAutoCompleteEnabled } from '@/lib/utils';
@@ -724,18 +724,12 @@ export default function Home() {
         setIsGeneratingFinalReport(false);
 
         // CRITICAL FIX: Force immediate navigation to results page with reportId
-        console.log(`FRONTEND: Attempting navigation to results page at: ${new Date().toISOString()}`);
+        console.log(`FRONTEND: Forcing direct navigation to results page at: ${new Date().toISOString()}`);
         console.log(`>>> FRONTEND: 🔴 Forcing navigation to /scorecard/results?reportId=${reportID}`);
-
-        // EMERGENCY FIX: Don't use a delay - redirect immediately with hard browser navigation
-        console.log(`>>> FRONTEND: EMERGENCY FIX - Immediate hard navigation to /scorecard/results?reportId=${reportID}`);
-        try {
-          // Force immediate navigation without any delay
-          window.location.replace(`/scorecard/results?reportId=${reportID}`);
-        } catch (navError) {
-          console.error('Primary navigation failed, trying fallback:', navError);
-          window.location.href = `/scorecard/results?reportId=${reportID}`;
-        }
+        
+        // Immediate hard navigation - no delays or checks
+        window.location.href = `/scorecard/results?reportId=${reportID}`;
+        
       } catch (firestoreError) {
         console.error(`FRONTEND: Error saving report to Firestore at: ${new Date().toISOString()}`, firestoreError);
         // Even if Firestore save fails, we should attempt to navigate with session data
@@ -744,15 +738,9 @@ export default function Home() {
 
         // Try to navigate to results without a reportId, relying on session data
         console.log('>>> FRONTEND: Attempting fallback navigation without reportId at:', new Date().toISOString());
-
-        // EMERGENCY FIX: Immediate fallback navigation without delay
-        console.log('>>> FRONTEND: EMERGENCY FIX - Immediate fallback navigation to /scorecard/results');
-        try {
-          window.location.replace('/scorecard/results');
-        } catch (navError) {
-          console.error('Fallback navigation failed, trying alternative method:', navError);
-          window.location.href = '/scorecard/results';
-        }
+        
+        // Immediate hard navigation without reportId
+        window.location.href = '/scorecard/results';
       }
     } catch (error) {
       console.error(`FRONTEND: Error in generateReport at: ${new Date().toISOString()}`, error);

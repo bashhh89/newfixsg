@@ -1132,34 +1132,19 @@ export default function NewResultsPage({ initialUserName }: NewResultsPageProps 
   }
 
   if (error) {
+    // Instead of showing an error page, redirect back to homepage
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
+    
+    // Return minimal loading spinner while redirecting
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center bg-white p-6">
-        <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg max-w-lg w-full mb-6">
-          <h2 className="text-2xl font-bold mb-3 text-red-700">Unable to Load Results</h2>
-          <p className="text-red-600 mb-4">{error}</p>
-          <p className="text-sg-dark-teal/70 mb-6">
-            We're having trouble loading your report. This could be due to:
-            <ul className="list-disc pl-6 mt-2">
-              <li>Your session has expired</li>
-              <li>The report ID was incorrect or missing</li>
-              <li>A temporary network issue</li>
-            </ul>
-          </p>
-          <div className="flex space-x-4">
-            <button 
-              onClick={() => window.location.reload()} 
-              className="px-6 py-3 bg-sg-bright-green text-white font-semibold rounded-lg shadow-sm hover:brightness-105 transition-all"
-            >
-              Retry Loading
-            </button>
-            <button 
-              onClick={() => window.location.href = '/'}  
-              className="px-6 py-3 bg-sg-dark-teal text-white font-semibold rounded-lg shadow-sm hover:brightness-105 transition-all"
-            >
-              Return to Home
-            </button>
-          </div>
-        </div>
+      <div className="fixed inset-0 flex flex-col items-center justify-center bg-white">
+        <div className="w-24 h-24 mb-8 border-4 border-sg-bright-green/30 border-t-sg-bright-green rounded-full animate-spin"></div>
+        <h2 className="text-2xl font-bold mb-3 text-sg-dark-teal">Loading Your AI Scorecard</h2>
+        <p className="text-sg-dark-teal/70 text-center max-w-md">
+          Please wait while we prepare your results. This may take a few moments...
+        </p>
       </div>
     );
   }

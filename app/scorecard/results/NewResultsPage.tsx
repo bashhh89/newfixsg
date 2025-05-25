@@ -1136,18 +1136,25 @@ export default function NewResultsPage({ initialUserName }: NewResultsPageProps 
       <div className="fixed inset-0 flex flex-col items-center justify-center bg-white p-6">
         <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg max-w-lg w-full mb-6">
           <h2 className="text-2xl font-bold mb-3 text-red-700">Unable to Load Results</h2>
-          <p className="text-red-600 mb-4">{error}</p>
+          <p className="text-red-600 mb-4">Failed to get document because the client is offline.</p>
           <p className="text-sg-dark-teal/70 mb-6">
             We're having trouble loading your report. This could be due to:
             <ul className="list-disc pl-6 mt-2">
+              <li>Your network connection is offline</li>
               <li>Your session has expired</li>
               <li>The report ID was incorrect or missing</li>
-              <li>A temporary network issue</li>
             </ul>
           </p>
-          <div className="flex space-x-4">
+          <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-4">
             <button 
-              onClick={() => window.location.reload()} 
+              onClick={() => {
+                // Check if we're back online before reloading
+                if (navigator.onLine) {
+                  window.location.reload();
+                } else {
+                  alert("You're still offline. Please check your internet connection and try again.");
+                }
+              }} 
               className="px-6 py-3 bg-sg-bright-green text-white font-semibold rounded-lg shadow-sm hover:brightness-105 transition-all"
             >
               Retry Loading
@@ -1157,6 +1164,30 @@ export default function NewResultsPage({ initialUserName }: NewResultsPageProps 
               className="px-6 py-3 bg-sg-dark-teal text-white font-semibold rounded-lg shadow-sm hover:brightness-105 transition-all"
             >
               Return to Home
+            </button>
+            <button 
+              onClick={() => {
+                // Try to get local data if available
+                try {
+                  const reportId = sessionStorage.getItem('reportId') || localStorage.getItem('reportId');
+                  const sessionMarkdown = sessionStorage.getItem('reportMarkdown');
+                  
+                  if (sessionMarkdown && reportId) {
+                    console.log("Found cached report data, attempting to use it");
+                    setError(null);
+                    setReportMarkdown(sessionMarkdown);
+                    setIsLoading(false);
+                  } else {
+                    alert("No cached report data available. Please reconnect to the internet and try again.");
+                  }
+                } catch (e) {
+                  console.error("Error retrieving cached data", e);
+                  alert("Could not retrieve cached data. Please reconnect to the internet and try again.");
+                }
+              }}
+              className="px-6 py-3 bg-amber-500 text-white font-semibold rounded-lg shadow-sm hover:brightness-105 transition-all"
+            >
+              Use Cached Data
             </button>
           </div>
         </div>

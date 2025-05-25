@@ -77,36 +77,12 @@ const ReportLoadingIndicator: React.FC<ReportLoadingIndicatorProps> = ({ isLoadi
       });
     }, 500);
 
-    // After 10 seconds, show emergency button
-    const emergencyTimeout = setTimeout(() => {
-      setShowEmergencyButton(true);
-      
-      // Try to get reportId from session or local storage
-      if (typeof window !== 'undefined') {
-        const storedReportId = sessionStorage.getItem('reportId') || 
-                               localStorage.getItem('reportId') || 
-                               sessionStorage.getItem('currentReportID') || 
-                               localStorage.getItem('currentReportID');
-        setReportId(storedReportId);
-      }
-    }, 10000);
-    
+    // Cleanup interval on unmount
     return () => {
       clearInterval(interval);
-      clearTimeout(emergencyTimeout);
     };
   }, [isLoading]);
   
-  const handleEmergencyRedirect = () => {
-    if (typeof window !== 'undefined') {
-      if (reportId) {
-        window.location.href = `/scorecard/results?reportId=${reportId}`;
-      } else {
-        window.location.href = '/scorecard/results';
-      }
-    }
-  };
-
   // Calculate dynamic styles
   const progressBarStyle = {
     width: `${progress}%`,
@@ -166,20 +142,6 @@ const ReportLoadingIndicator: React.FC<ReportLoadingIndicatorProps> = ({ isLoadi
         <span className="w-2 h-2 bg-sg-bright-green rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></span>
         <span className="w-2 h-2 bg-sg-bright-green rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></span>
       </div>
-
-      {showEmergencyButton && (
-        <div className="mt-8">
-          <button 
-            onClick={handleEmergencyRedirect}
-            className="px-6 py-3 bg-sg-bright-green text-white font-medium rounded-lg shadow-lg hover:bg-sg-bright-green/90 transition-all"
-          >
-            View Results Now
-          </button>
-          <p className="text-white/60 text-sm mt-2">
-            Click the button if the report is taking too long to load
-          </p>
-        </div>
-      )}
     </div>
   );
 };

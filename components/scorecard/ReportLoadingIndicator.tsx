@@ -21,6 +21,8 @@ const loadingMessages = [
 const ReportLoadingIndicator: React.FC<ReportLoadingIndicatorProps> = ({ isLoading = true }) => {
   const [messageIndex, setMessageIndex] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [showEmergencyButton, setShowEmergencyButton] = useState(false);
+  const [reportId, setReportId] = useState<string | null>(null);
 
   // Cycle through loading messages
   useEffect(() => {
@@ -55,6 +57,64 @@ const ReportLoadingIndicator: React.FC<ReportLoadingIndicatorProps> = ({ isLoadi
       setProgress(100);
     }
   }, [isLoading, progress]);
+
+  useEffect(() => {
+    // Start with progress at 0
+    setProgress(0);
+    
+    // Only run animation if loading is true
+    if (!isLoading) return;
+    
+    // Animate progress to 95% over 10 seconds
+    const interval = setInterval(() => {
+      setProgress(prev => {
+        // Cap progress at 95% for the animation
+        if (prev >= 95) {
+          clearInterval(interval);
+          return 95;
+        }
+        return prev + 5;
+      });
+    }, 500);
+
+    // After 10 seconds, show emergency button
+    const emergencyTimeout = setTimeout(() => {
+      setShowEmergencyButton(true);
+      
+      // Try to get reportId from session or local storage
+      if (typeof window !== 'undefined') {
+        const storedReportId = sessionStorage.getItem('reportId') || 
+                               localStorage.getItem('reportId') || 
+                               sessionStorage.getItem('currentReportID') || 
+                               localStorage.getItem('currentReportID');
+        setReportId(storedReportId);
+      }
+    }, 10000);
+    
+    return () => {
+      clearInterval(interval);
+      clearTimeout(emergencyTimeout);
+    };
+  }, [isLoading]);
+  
+  const handleEmergencyRedirect = () => {
+    if (typeof window !== 'undefined') {
+      if (reportId) {
+        window.location.href = `/scorecard/results?reportId=${reportId}`;
+      } else {
+        window.location.href = '/scorecard/results';
+      }
+    }
+  };
+
+  // Calculate dynamic styles
+  const progressBarStyle = {
+    width: `${progress}%`,
+    backgroundColor: '#33cc99', // SG bright green
+    height: '8px',
+    borderRadius: '4px',
+    transition: 'width 0.5s ease-out'
+  };
 
   if (!isLoading) return null;
 
@@ -92,10 +152,7 @@ const ReportLoadingIndicator: React.FC<ReportLoadingIndicatorProps> = ({ isLoadi
       
       {/* Progress bar */}
       <div className="w-64 h-2 bg-white/20 rounded-full overflow-hidden mb-3">
-        <div 
-          className="h-full bg-sg-bright-green rounded-full transition-all duration-300 ease-out"
-          style={{ width: `${progress}%` }}
-        ></div>
+        <div style={progressBarStyle} className="h-full bg-sg-bright-green rounded-full transition-all duration-300 ease-out"></div>
       </div>
       
       {/* Progress percentage */}
@@ -109,6 +166,20 @@ const ReportLoadingIndicator: React.FC<ReportLoadingIndicatorProps> = ({ isLoadi
         <span className="w-2 h-2 bg-sg-bright-green rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></span>
         <span className="w-2 h-2 bg-sg-bright-green rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></span>
       </div>
+
+      {showEmergencyButton && (
+        <div className="mt-8">
+          <button 
+            onClick={handleEmergencyRedirect}
+            className="px-6 py-3 bg-sg-bright-green text-white font-medium rounded-lg shadow-lg hover:bg-sg-bright-green/90 transition-all"
+          >
+            View Results Now
+          </button>
+          <p className="text-white/60 text-sm mt-2">
+            Click the button if the report is taking too long to load
+          </p>
+        </div>
+      )}
     </div>
   );
 };
